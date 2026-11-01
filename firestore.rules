@@ -1,0 +1,22 @@
+rules_version = '2';
+// Security rules for Mushaf Notebook. Paste these in Firebase console > Firestore Database > Rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isTeacher() {
+      return signedIn() && exists(/databases/$(database)/documents/config/teachers)
+        && request.auth.uid in get(/databases/$(database)/documents/config/teachers).data.uids;
+    }
+    // Teachers are listed by hand in the console: collection "config", document "teachers", field "uids" (an array of App IDs).
+    match /config/{doc} { allow read: if signedIn(); allow write: if false; }
+    // Each person's own notebook pages.
+    match /data/users/{uid}/{rest=**} { allow read, write: if signedIn() && request.auth.uid == uid; }
+    // Profiles: everyone signed in can read; each person writes only their own.
+    match /profiles/{uid} { allow read: if signedIn(); allow write: if signedIn() && request.auth.uid == uid; }
+    // A student's chat and lessons: that student and the teachers.
+    match /threads/{sid}/{rest=**} { allow read, write: if signedIn() && (request.auth.uid == sid || isTeacher()); }
+    // Live lesson sessions: anyone with the code who is signed in.
+    match /sessions/{code}/{rest=**} { allow read, write: if signedIn(); }
+    match /sessions/{code} { allow read, write: if signedIn(); }
+  }
+}

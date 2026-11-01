@@ -1,0 +1,31 @@
+{
+  "name": "Mushaf Notebook",
+  "short_name": "Mushaf",
+  "description": "An editable Quran for reciting, notes, qiraat and lessons with your teacher.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#efe8d8",
+  "theme_color": "#1f78b4",
+  "lang": "en",
+  "dir": "auto",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
