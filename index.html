@@ -279,6 +279,11 @@ body.abar-open .toast{bottom:130px}
 .w[data-prev]{text-decoration:underline dotted var(--mc);text-decoration-thickness:2px;text-underline-offset:8px}
 .dash{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;padding:16px}
 body.dash-open{overflow:hidden}
+body.locked #dClose{display:none}
+.gatelang{display:none}
+body.locked .gatelang{display:inline-block}
+.gatewait{text-align:center;padding:60px 16px;color:var(--muted, #888)}
+.gatewait h2{margin:0 0 8px}
 .dash-in{max-width:1180px;margin:0 auto}
 .dbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);padding:6px 0 10px;z-index:1}
 .dbar h2{margin:0;font-size:20px}
@@ -649,6 +654,7 @@ canvas.over{z-index:4}
       <button class="btn primary" id="dAdd">+ Add student</button>
       <button class="btn" id="dBackup" title="Save your students to a file">Back up</button>
       <label class="btn" title="Bring students back from a backup file">Restore<input type="file" id="dRestore" accept=".json,application/json" hidden></label>
+      <select id="gateLang" class="gatelang" aria-label="Language"></select>
       <button class="btn icon" id="dClose" aria-label="Close dashboard">✕</button></header>
     <p class="dnote">Your students are saved in this browser on this computer. Press Back up now and then to keep a copy.</p>
     <div id="dBody"></div>
@@ -779,14 +785,21 @@ async function connect() {
       const fb = await initFirebase(fbc);
       P2P.on = false; cloud.fb = true; cloud.fbApp = true; cloud.fbDb = fb.db; cloud.db = fb.db; cloud.state = 'connecting';
       cloud.user = { id: async () => cloud.uid, isOwner: async () => false, can: async () => true, canEdit: async () => !!(CLS.me && CLS.me.role === 'teacher') };
+      connDone = true;
       firebase.auth().onAuthStateChanged(u => {
-        if (u) onSignedIn(u);
-        else { clsUnsubAll(); CLS.user = null; CLS.me = null; CLS.classes = []; CLS.cid = null; CLS.cls = null; cloud.col = null; cloud.state = 'off'; refreshStatus(); if (!CLS.skip) openDash('list'); }
+        CLS.ready = true;
+        if (u) { onSignedIn(u); renderDash(); }
+        else { clsUnsubAll(); CLS.user = null; CLS.me = null; CLS.classes = []; CLS.cid = null; CLS.cls = null; cloud.col = null; cloud.state = 'off'; lsSet('fbMe', null); refreshStatus(); renderDash(); }
       });
       refreshStatus(); return;
-    } catch (e) { console.warn('Firebase could not start; using direct mode', e); }
+    } catch (e) {
+      console.warn('Firebase could not start', e);
+      connDone = true; CLS.fbFail = true; CLS.ready = true; cloud.state = 'off'; refreshStatus(); renderDash();
+      if (lsGet('fbMe')) closeDash();
+      return;
+    }
   }
-  if (!c || !c.use) { cloud.state = 'off'; refreshStatus(); pchatStart(); return; }
+  if (!c || !c.use) { connDone = true; cloud.state = 'off'; refreshStatus(); pchatStart(); applyGate(); return; }
   const timeout = new Promise(r => setTimeout(() => r([null, null]), 12000));
   try {
     const [user, db] = await Promise.race([Promise.all([c.use('user'), c.use('db')]), timeout]);
@@ -807,10 +820,10 @@ async function connect() {
         } catch {}
       }
       visible().forEach(loadCloudPage);
-      loadHome().then(() => { if (!HOME.role) openDash('list'); });
-    } else cloud.state = 'off';
-  } catch { cloud.state = 'off'; }
-  refreshStatus();
+      loadHome().then(() => { connDone = true; if (!$('#dash').hidden) renderDash(); applyGate(); });
+    } else { cloud.state = 'off'; connDone = true; }
+  } catch { cloud.state = 'off'; connDone = true; }
+  refreshStatus(); if (cloud.state === 'off') renderDash();
 }
 
 /* ---------------- undo ---------------- */
@@ -1209,13 +1222,32 @@ function setPrevFor(id) {
   const st = id && roster().students[id], ll = lastLesson(st);
   if (ll) for (const m of ll.marks || []) PREV[m.k] = m;
 }
+/* sign-in gate: nothing opens until the person signs in (accounts) or chooses their role once (no accounts) */
+let connDone = false;
+const fbMode = () => !!(window.MNB_FIREBASE && window.MNB_FIREBASE.apiKey) && !(window.claude && window.claude.use);
+function needGate() {
+  if (fbMode()) return CLS.fbFail ? !lsGet('fbMe') : !(CLS.user && CLS.me);
+  if (window.claude && window.claude.use && !connDone) return true;
+  if (onlineMode()) return !HOME.loaded || !HOME.role;
+  return !lsGet('localRole');
+}
+function applyGate() {
+  const g = needGate();
+  document.body.classList.toggle('locked', g);
+  const gl = $('#gateLang'); if (g && gl) { if (!gl.options.length) gl.innerHTML = UI_LANGS.map(([c, n]) => `<option value="${c}">${n}</option>`).join(''); gl.value = uiLang; }
+  if (g && $('#dash').hidden) openDash('list');
+  return g;
+}
+function gateWait(msg) { return `<div class="gatewait"><h2>Mushaf Notebook</h2><p>${msg || 'Loading…'}</p></div>`; }
 function openDash(view, id) {
   DASH.view = view || 'list'; DASH.id = id || null;
   $('#dash').hidden = false; document.body.classList.add('dash-open'); renderDash();
 }
-function closeDash() { $('#dash').hidden = true; document.body.classList.remove('dash-open'); }
+function closeDash() { if (needGate()) return; $('#dash').hidden = true; document.body.classList.remove('dash-open'); }
 function renderDash() {
-  if (cloud.fbApp && !CLS.skip) {
+  applyGate();
+  if (window.claude && window.claude.use && !connDone) { $('.dbar h2').textContent = 'Mushaf Notebook'; ['#dAdd', '#dBackup', '#dSearch', '.dnote'].forEach(q => $(q).hidden = true); $('#dRestore').parentElement.hidden = true; $('#dBody').innerHTML = gateWait(); return; }
+  if (fbMode()) {
     $('.dbar h2').textContent = CLS.user ? (CLS.me && CLS.me.role === 'teacher' ? 'Teacher dashboard' : 'Student dashboard') : 'Mushaf Notebook';
     $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; $('.dnote').hidden = true;
     $('#dBody').innerHTML = clsHtml();
@@ -1228,9 +1260,8 @@ function renderDash() {
   $('#dSearch').hidden = online && HOME.role !== 'teacher';
   $('.dnote').hidden = online;
   if (online) { $('#dBody').innerHTML = homeHtml(); renderChat(); return; }
-  if (cloud.fbApp && CLS.skip) $('#dBody').insertAdjacentHTML('beforebegin', '');
   const lr = lsGet('localRole');
-  if (!lr) { $('.dbar h2').textContent = 'Mushaf Notebook'; $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; PCHAT.open = null; $('#dBody').innerHTML = localRoleHtml(); return; }
+  if (!lr) { $('.dbar h2').textContent = 'Mushaf Notebook'; $('.dnote').hidden = true; $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; PCHAT.open = null; $('#dBody').innerHTML = localRoleHtml(); return; }
   if (lr === 'student') { $('.dbar h2').textContent = 'Student dashboard'; $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; PCHAT.open = lsGet('myteacher') || null; $('#dBody').innerHTML = localStudentHtml(); renderPChat(); return; }
   PCHAT.open = null;
   const R = roster(), list = Object.values(R.students), body = $('#dBody');
@@ -1241,7 +1272,7 @@ function renderDash() {
     .sort((a, b) => ((lastLesson(b) || {}).date || b.created || 0) - ((lastLesson(a) || {}).date || a.created || 0));
   const today = list.filter(s => dayLabel((lastLesson(s) || {}).date) === 'Today').length;
   const repeat = list.filter(s => (lastLesson(s) || {}).result === 'repeat').length;
-  body.innerHTML = (P2P.on ? `<div class="hhead"><span class="grow"></span>${appIdBox()}<button class="btn" data-lrole-switch="1">Switch to student</button></div>` : '') + `<div class="dstats"><div><b>${list.length}</b><span>students</span></div><div><b>${today}</b><span>recited today</span></div><div><b>${repeat}</b><span>need to repeat</span></div></div>`
+  body.innerHTML = (P2P.on ? `<div class="hhead"><span class="grow"></span>${appIdBox()}</div>` : '') + `<div class="dstats"><div><b>${list.length}</b><span>students</span></div><div><b>${today}</b><span>recited today</span></div><div><b>${repeat}</b><span>need to repeat</span></div></div>`
     + (list.length ? '' : `<p class="empty">No students yet. Press <strong>Add student</strong> to make a slot for each student with their full name, place and details.</p>`)
     + `<div class="dgrid">${shown.map(cardHtml).join('')}</div>`;
 }
@@ -1422,7 +1453,7 @@ function renderChat() {
 function studentLabel(sid) { const s = HOME.students.find(x => x.id === sid); return s ? s.name || 'Unnamed student' : 'Student'; }
 function homeHtml() {
   if (!HOME.loaded) { loadHome(); return '<p class="empty">Loading…</p>'; }
-  if (!HOME.role) return `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose once. You can change it later.</p>
+  if (!HOME.role) return `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose carefully: this can't be changed later.</p>
     <div class="hcards"><button class="hcard" data-role="student"><b>I'm a student</b><span>Your lessons, grades, results and a chat with your teacher.</span></button>
     <button class="hcard" data-role="teacher"><b>I'm a teacher</b><span>All your students, their mistakes, grading and a chat with each one.</span></button></div>
     ${HOME.msgRole ? `<p class="serr">${esc(HOME.msgRole)}</p>` : ''}</div>`;
@@ -1441,7 +1472,7 @@ function lessonCard(l) {
 }
 function studentHomeHtml() {
   const p = HOME.profile || {}, last = HOME.lessons[0], t = last && last.grade ? gradeTotals(last.grade) : null;
-  return `<div class="hhead"><h2>Assalamu alaikum${p.name ? ', ' + esc(p.name.split(' ')[0]) : ''}</h2><span class="grow"></span><button class="btn" data-role-switch="1">Switch to teacher</button></div>
+  return `<div class="hhead"><h2>Assalamu alaikum${p.name ? ', ' + esc(p.name.split(' ')[0]) : ''}</h2><span class="grow"></span></div>
     <div class="hsplit"><div>
       <div class="dstats"><div><b>${HOME.lessons.length}</b><span>lessons</span></div><div><b>${last ? resultPill(last.result) || '–' : '–'}</b><span>last result</span></div><div><b>${t ? t.pct + '%' : '–'}</b><span>last grade</span></div></div>
       <div class="sect">My details</div>${profileForm(p)}
@@ -1454,7 +1485,7 @@ function teacherHomeHtml() {
   const shown = list.filter(s => !q || [s.name, s.place, s.details].join(' ').toLowerCase().includes(q));
   const today = list.filter(s => HOME.last[s.id] && HOME.last[s.id].lesson && dayLabel(HOME.last[s.id].lesson.date) === 'Today').length;
   const repeat = list.filter(s => HOME.last[s.id] && HOME.last[s.id].lesson && HOME.last[s.id].lesson.result === 'repeat').length;
-  return `<div class="hhead"><h2>Teacher dashboard</h2><span class="grow"></span><button class="btn" id="hRefresh">Refresh</button><button class="btn" data-role-switch="1">Switch to student</button></div>
+  return `<div class="hhead"><h2>Teacher dashboard</h2><span class="grow"></span><button class="btn" id="hRefresh">Refresh</button></div>
     <div class="dstats"><div><b>${list.length}</b><span>students</span></div><div><b>${today}</b><span>recited today</span></div><div><b>${repeat}</b><span>need to repeat</span></div></div>
     ${list.length ? '' : '<p class="empty">No students yet. Share this page with each student (Share menu, Contributor access). When they open it and choose "I\'m a student", they appear here.</p>'}
     <div class="dgrid">${shown.map(s => {
@@ -1690,6 +1721,12 @@ const UI_ROWS = [
 ['Feedback','ملاحظات','Jawaab celin','Retour','رائے','Geri bildirim','Masukan','Maoni'],
 ['Please come online','تفضل بالحضور الآن','Fadlan soo gal hadda','Merci de vous connecter','براہ کرم آن لائن آئیں','Lütfen çevrimiçi ol','Silakan online','Tafadhali ingia mtandaoni'],
 ['Assalamu alaikum. Who are you?','السلام عليكم. من أنت؟','Assalaamu calaykum. Yaad tahay?','Assalamu alaykum. Qui êtes-vous ?','السلام علیکم۔ آپ کون ہیں؟','Esselamu aleyküm. Siz kimsiniz?','Assalamualaikum. Anda siapa?','Assalaamu alaykum. Wewe ni nani?'],
+["Choose carefully: this can't be changed later.",'اختر بعناية: لا يمكن تغيير هذا لاحقاً.','Si taxaddar leh u dooro: tan hadhow lama beddeli karo.','Choisissez bien : ce choix ne pourra plus être changé.','سوچ سمجھ کر چنیں: یہ بعد میں تبدیل نہیں ہو سکتا۔','Dikkatli seçin: bu daha sonra değiştirilemez.','Pilih dengan cermat: ini tidak bisa diubah nanti.','Chagua kwa makini: hili haliwezi kubadilishwa baadaye.'],
+["Sign in to see your class, your lessons and your teacher's notes.",'سجّل الدخول لترى فصلك ودروسك وملاحظات معلمك.','Gal si aad u aragto fasalkaaga, casharradaada iyo qoraallada macallinkaaga.','Connectez-vous pour voir votre classe, vos leçons et les notes de votre enseignant.','اپنی کلاس، اسباق اور استاد کے نوٹس دیکھنے کے لیے سائن ان کریں۔','Sınıfınızı, derslerinizi ve öğretmeninizin notlarını görmek için giriş yapın.','Masuk untuk melihat kelas, pelajaran, dan catatan guru Anda.','Ingia ili kuona darasa lako, masomo yako na maelezo ya mwalimu wako.'],
+["Students join their teacher's class. Teachers create classes for their students.",'ينضم الطلاب إلى فصل معلمهم. ينشئ المعلمون فصولاً لطلابهم.','Ardaydu waxay ku biiraan fasalka macallinkooda. Macallimiintu waxay u sameeyaan fasallo ardaydooda.','Les élèves rejoignent la classe de leur enseignant. Les enseignants créent des classes pour leurs élèves.','طلبہ اپنے استاد کی کلاس میں شامل ہوتے ہیں۔ اساتذہ اپنے طلبہ کے لیے کلاسیں بناتے ہیں۔','Öğrenciler öğretmenlerinin sınıfına katılır. Öğretmenler öğrencileri için sınıf oluşturur.','Murid bergabung ke kelas guru mereka. Guru membuat kelas untuk murid mereka.','Wanafunzi hujiunga na darasa la mwalimu wao. Walimu huunda madarasa kwa wanafunzi wao.'],
+['Loading…','جارٍ التحميل…','Waa la soo rarayaa…','Chargement…','لوڈ ہو رہا ہے…','Yükleniyor…','Memuat…','Inapakia…'],
+['Connect to the internet to sign in the first time.','اتصل بالإنترنت لتسجيل الدخول أول مرة.','Ku xidh internetka si aad u gasho markii ugu horreysay.','Connectez-vous à internet pour vous connecter la première fois.','پہلی بار سائن ان کرنے کے لیے انٹرنیٹ سے جڑیں۔','İlk kez giriş yapmak için internete bağlanın.','Sambungkan ke internet untuk masuk pertama kali.','Unganisha intaneti ili uingie mara ya kwanza.'],
+["You're offline. Your Quran and notes work; your class needs internet.",'أنت غير متصل. المصحف والملاحظات تعمل؛ الفصل يحتاج إلى الإنترنت.','Internet ma haysid. Quraanka iyo qoraalladu way shaqeynayaan; fasalku wuxuu u baahan yahay internet.','Vous êtes hors ligne. Le Coran et vos notes fonctionnent ; la classe a besoin d’internet.','آپ آف لائن ہیں۔ قرآن اور نوٹس کام کرتے ہیں؛ کلاس کے لیے انٹرنیٹ چاہیے۔','Çevrimdışısınız. Kuran ve notlar çalışır; sınıf için internet gerekir.','Anda offline. Al-Quran dan catatan berfungsi; kelas perlu internet.','Huna intaneti. Quran na maelezo yanafanya kazi; darasa linahitaji intaneti.'],
 ['Choose once. You can change it later.','اختر مرة واحدة، ويمكنك التغيير لاحقاً.','Hal mar dooro. Hadhow waad beddeli kartaa.','Choisissez une fois. Vous pourrez changer plus tard.','ایک بار چنیں۔ بعد میں بدل سکتے ہیں۔','Bir kez seçin. Sonra değiştirebilirsiniz.','Pilih sekali. Bisa diubah nanti.','Chagua mara moja. Unaweza kubadilisha baadaye.'],
 ['Your lessons, grades, results and a chat with your teacher.','دروسك ودرجاتك ونتائجك ومحادثة مع معلمك.','Casharradaada, darajooyinkaaga, natiijooyinka iyo sheeko macallinkaaga.','Vos leçons, notes, résultats et une discussion avec votre enseignant.','آپ کے اسباق، نمبر، نتائج اور استاد سے بات چیت۔','Dersleriniz, notlarınız, sonuçlarınız ve öğretmeninizle sohbet.','Pelajaran, nilai, hasil, dan obrolan dengan guru Anda.','Masomo yako, alama, matokeo na mazungumzo na mwalimu wako.'],
 ['All your students, their mistakes, grading and a chat with each one.','كل طلابك وأخطاؤهم وتقييمهم ومحادثة مع كل واحد.','Dhammaan ardaydaada, khaladaadkooda, qiimeynta iyo sheeko mid kasta.','Tous vos élèves, leurs erreurs, la notation et une discussion avec chacun.','آپ کے تمام طلبہ، ان کی غلطیاں، نمبر اور ہر ایک سے بات چیت۔','Tüm öğrencileriniz, hataları, notlandırma ve her biriyle sohbet.','Semua murid Anda, kesalahan mereka, penilaian, dan obrolan dengan masing-masing.','Wanafunzi wako wote, makosa yao, alama na mazungumzo na kila mmoja.'],
@@ -1819,6 +1856,7 @@ function setUiLang(lang, fromUser) {
   document.documentElement.lang = uiLang;
   document.body.classList.toggle('ui-rtl', UI_RTL.has(uiLang));
   const sel = $('#uiLang'); if (sel) sel.value = uiLang;
+  const gsel = $('#gateLang'); if (gsel && gsel.options.length) gsel.value = uiLang;
   uiTranslate();
   if (fromUser && ['en', 'so', 'fr', 'ur', 'tr', 'id', 'sw'].includes(uiLang) && trLang !== 'off' && trLang !== uiLang) {
     trLang = uiLang; $('#trSel').value = trLang; loadTr(trLang).then(render);
@@ -1914,7 +1952,7 @@ function pUnread(other) { const seen = lsGet('pseen:' + other) || 0; return pThr
 
 /* offline dashboards: choose a role on this device */
 function localRoleHtml() {
-  return (cloud.fbApp ? '<div class="nact" style="justify-content:center"><button class="btn primary" id="aBack">Sign in or create an account</button></div>' : '') + `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose once. You can change it later.</p>
+  return `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose carefully: this can't be changed later.</p>
     <div class="hcards"><button class="hcard" data-lrole="student"><b>I'm a student</b><span>Your lessons, results and a chat with your teacher.</span></button>
     <button class="hcard" data-lrole="teacher"><b>I'm a teacher</b><span>All your students, their mistakes, grading and a chat with each one.</span></button></div></div>`;
 }
@@ -1926,7 +1964,7 @@ function localStudentHtml() {
   const lessons = p2pPast().filter(x => x.role === 'student');
   const full = lessons.map(x => ({...x, ...(lsGet('live:' + x.code) || {})}));
   const last = full[0];
-  return `<div class="hhead"><h2>Assalamu alaikum${lsGet('myname') ? ', ' + esc(String(lsGet('myname')).split(' ')[0]) : ''}</h2><span class="grow"></span><button class="btn" data-lrole-switch="1">Switch to teacher</button></div>
+  return `<div class="hhead"><h2>Assalamu alaikum${lsGet('myname') ? ', ' + esc(String(lsGet('myname')).split(' ')[0]) : ''}</h2><span class="grow"></span></div>
     <div class="hsplit"><div>
       <div class="dstats"><div><b>${full.length}</b><span>lessons</span></div><div><b>${last && last.result ? resultPill(last.result.result) : '–'}</b><span>last result</span></div><div><b>${last && last.result && last.result.grade ? gradeTotals(last.result.grade).pct + '%' : '–'}</b><span>last grade</span></div></div>
       <div class="sect">My details</div>
@@ -2013,7 +2051,7 @@ function authHtml() {
     <label class="dfield"><span>Password</span><input id="aPass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="${up ? 'At least 6 characters' : ''}"></label>
     ${CLS.authMsg ? `<p class="serr">${esc(CLS.authMsg)}</p>` : ''}
     <button class="btn primary wide" id="aGo"${CLS.busy ? ' disabled' : ''}>${up ? 'Create account' : 'Sign in'}</button>
-    <div class="authlinks"><button class="linkbtn" id="aSwitch">${up ? 'I already have an account' : 'Create a new account'}</button>${up ? '' : '<button class="linkbtn" id="aForgot">Forgot password?</button>'}<button class="linkbtn" id="aSkip">Continue without an account</button></div></div>`;
+    <div class="authlinks"><button class="linkbtn" id="aSwitch">${up ? 'I already have an account' : 'Create a new account'}</button>${up ? '' : '<button class="linkbtn" id="aForgot">Forgot password?</button>'}</div></div>`;
 }
 function authError(e) {
   const c = e && e.code || '';
@@ -2045,6 +2083,7 @@ async function onSignedIn(u) {
   else { for (let i = 0; i < 6 && !CLS.me; i++) { try { const d = await fbdb().doc('users/' + u.uid).get(); CLS.me = d.exists ? d.data() : null; } catch {} if (!CLS.me) await new Promise(r => setTimeout(r, 500)); } }
   if (!CLS.me) { CLS.me = {role: 'student', name: u.email || 'Student', classIds: [], created: Date.now()}; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
   if (CLS.me.lang && CLS.me.lang !== uiLang && !lsGet('prefs')?.ui) setUiLang(CLS.me.lang);
+  lsSet('fbMe', {role: CLS.me.role, name: CLS.me.name || ''});
   await clsLoad();
   openDash('list');
 }
@@ -2089,6 +2128,8 @@ const memberName = id => (CLS.members[id] || {}).name || 'Student';
 
 /* ---- pages ---- */
 function clsHtml() {
+  if (CLS.fbFail) return lsGet('fbMe') ? gateWait("You're offline. Your Quran and notes work; your class needs internet.") : gateWait('Connect to the internet to sign in the first time.');
+  if (!CLS.ready || (CLS.user && !CLS.me)) return gateWait();
   if (!CLS.user) return authHtml();
   const me = CLS.me || {}, isT = me.role === 'teacher';
   const top = `<div class="hhead"><div><h2>Assalamu alaikum${me.name ? ', ' + esc(me.name.split(' ')[0]) : ''}</h2><div class="sub">${isT ? 'Teacher' : 'Student'} · ${esc(CLS.user.email || '')}</div></div><span class="grow"></span>
@@ -3614,7 +3655,6 @@ $('#dBody').addEventListener('click', async e => {
     if (HOME.role === 'teacher') loadStudents(); else { loadLessons(cloud.uid); openThread(cloud.uid); }
     renderDash();
   }
-  else if (b.dataset.roleSwitch) { HOME.role = null; HOME.view = 'home'; renderDash(); }
   else if (b.dataset.hopen) openStudentOnline(b.dataset.hopen);
   else if (b.dataset.hlesson) startLessonOnline(b.dataset.hlesson);
   else if (b.id === 'hBack') { HOME.view = 'home'; if (HOME.unsub) { HOME.unsub(); HOME.unsub = null; } renderDash(); loadStudents(); }
@@ -3650,11 +3690,11 @@ $('#pbody').addEventListener('click', e => {
   else if (b.dataset.gdel !== undefined) { SES.grade.items.splice(+b.dataset.gdel, 1); SES.grade.preset = 'custom'; renderPanel(); }
 });
 $('#uiLang').addEventListener('change', e => { setUiLang(e.target.value, true); savePrefs(); });
+$('#gateLang').addEventListener('change', e => { setUiLang(e.target.value, true); savePrefs(); });
 $('#dBody').addEventListener('click', e => {
   if (onlineMode()) return;
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.lrole) { lsSet('localRole', b.dataset.lrole); renderDash(); }
-  else if (b.dataset.lroleSwitch) { lsSet('localRole', lsGet('localRole') === 'teacher' ? 'student' : 'teacher'); DASH.view = 'list'; renderDash(); }
+  if (b.dataset.lrole) { if (lsGet('localRole')) return; lsSet('localRole', b.dataset.lrole); renderDash(); }
   else if (b.dataset.copyid) { navigator.clipboard?.writeText(myAppId()).then(() => { b.textContent = 'Copied'; }).catch(() => {}); }
   else if (b.id === 'pchatSend') { const t = $('#pchatIn'); pSend(PCHAT.open, t.value); t.value = ''; }
   else if (b.dataset.pjoin) { closeDash(); p2pJoin(b.dataset.pjoin, 'student'); tab = 'ses'; $('#panel').classList.add('open'); }
@@ -3700,13 +3740,10 @@ $('#dBody').addEventListener('click', async e => {
   if (!cloud.fbApp) return;
   const b = e.target.closest('button'); if (!b) return;
   const isT = CLS.me && CLS.me.role === 'teacher';
-  if (b.id === 'aBack') { CLS.skip = false; P2P.on = false; cloud.db = cloud.fbDb; renderDash(); return; }
-  if (CLS.skip) return;
   if (b.id === 'aGo') doAuth();
   else if (b.id === 'aSwitch') { CLS.authMode = CLS.authMode === 'up' ? 'in' : 'up'; CLS.authMsg = ''; renderDash(); }
   else if (b.dataset.arole) { CLS.newRole = b.dataset.arole; document.querySelectorAll('[data-arole]').forEach(x => x.classList.toggle('on', x === b)); }
   else if (b.id === 'aForgot') { const em = $('#aEmail').value.trim(); if (!em) { CLS.authMsg = 'Write your email first, then press Forgot password.'; return renderDash(); } try { await firebase.auth().sendPasswordResetEmail(em); CLS.authMsg = 'We sent a link to reset your password. Check your email.'; } catch (err) { CLS.authMsg = authError(err); } renderDash(); }
-  else if (b.id === 'aSkip') { CLS.skip = true; P2P.on = true; cloud.db = null; pchatStart(); renderDash(); }
   else if (b.id === 'aOut') { await firebase.auth().signOut(); }
   else if (b.id === 'joinGo') joinClass($('#joinCode').value);
   else if (b.dataset.gotor) { const [s1, a1] = b.dataset.gotor.split(':').map(Number); closeDash(); goto(Q.p[s1 - 1][a1 - 1]); }
@@ -3746,7 +3783,7 @@ $('#dBody').addEventListener('keydown', e => {
   if ((e.target.id === 'aPass' || e.target.id === 'aEmail') && e.key === 'Enter') { e.preventDefault(); doAuth(); }
 });
 $('#dBody').addEventListener('change', async e => {
-  if (!cloud.fbApp || CLS.skip) return;
+  if (!cloud.fbApp) return;
   const t = e.target;
   if (t.id === 'clsPick') { if (t.value) { CLS.view = 'home'; CLS.sid = null; clsOpenClass(t.value); } else { clsUnsubAll(); CLS.cid = null; CLS.cls = null; renderDash(); } }
   else if ((t.dataset.sd !== undefined || t.dataset.ss !== undefined || t.dataset.se !== undefined) && CLS.me.role === 'teacher') {
@@ -3985,6 +4022,7 @@ $('#aRate').value = String(A.rate); $('#aRep').value = String(A.rep); $('#aCont'
 if (TAFS[prefs.taf] || prefs.taf === 'off') tafSrc = prefs.taf; perfect = prefs.perfect !== false; $('#tafSel').value = tafSrc;
 $('#trSel').value = trLang; $('#rootTg').checked = showRoots; $('#qrTg').checked = showQr;
 setTool('read'); refreshStatus(); updateTopH();
+applyGate();
 connect();
 const getJson = dataFile;
 const extras = Promise.all([getJson('qiraat10.json'), getJson('roots.json'), loadTr(trLang), getJson('qrec.json'), getJson('shatibi.json')]);

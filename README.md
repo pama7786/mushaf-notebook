@@ -26,6 +26,13 @@ Live at **https://pama7786.github.io/mushaf-notebook/**
 
 To update the app later, upload the changed files again; installed apps pick up the new version the next time they open with internet.
 
+## Signing in
+
+The app opens on a sign-in screen. Nobody reaches the Quran or the dashboards until they sign in, and the screen has a language picker so everyone can read it in their own language.
+
+- **With Firebase switched on:** everyone signs in with email and password. The role (student or teacher) is chosen once at sign-up and can never be changed, not in the app and not through the database rules. A teacher who also wants a student account signs up again with another email. After the first sign-in the app also opens offline.
+- **Without Firebase:** the first screen asks once whether you are a student or a teacher. That choice is fixed on that device.
+
 ## Chat and lessons: two ways
 
 ### Direct (works straight away, no accounts)

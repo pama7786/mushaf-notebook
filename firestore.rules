@@ -12,7 +12,9 @@ service cloud.firestore {
     // Accounts: everyone signed in can see names; each person edits only their own.
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && me() == uid;
+      allow create: if signedIn() && me() == uid && request.resource.data.role in ['student', 'teacher'];
+      // the role chosen at sign-up can never be changed
+      allow update: if signedIn() && me() == uid && request.resource.data.role == resource.data.role;
     }
     // Each person's own notebook pages.
     match /data/users/{uid}/{rest=**} { allow read, write: if signedIn() && me() == uid; }
