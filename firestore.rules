@@ -1,22 +1,49 @@
 rules_version = '2';
-// Security rules for Mushaf Notebook. Paste these in Firebase console > Firestore Database > Rules.
+// Security rules for Mushaf Notebook. Paste these in Firebase console > Firestore Database > Rules, then Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isTeacher() {
-      return signedIn() && exists(/databases/$(database)/documents/config/teachers)
-        && request.auth.uid in get(/databases/$(database)/documents/config/teachers).data.uids;
+    function me() { return request.auth.uid; }
+    function cls(cid) { return get(/databases/$(database)/documents/classes/$(cid)).data; }
+    function isTeacherOf(cid) { return signedIn() && cls(cid).teacherId == me(); }
+    function inClass(cid) { return signedIn() && me() in cls(cid).studentIds; }
+    function isTeacherUser() { return signedIn() && get(/databases/$(database)/documents/users/$(me())).data.role == 'teacher'; }
+
+    // Accounts: everyone signed in can see names; each person edits only their own.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid;
     }
-    // Teachers are listed by hand in the console: collection "config", document "teachers", field "uids" (an array of App IDs).
-    match /config/{doc} { allow read: if signedIn(); allow write: if false; }
     // Each person's own notebook pages.
-    match /data/users/{uid}/{rest=**} { allow read, write: if signedIn() && request.auth.uid == uid; }
-    // Profiles: everyone signed in can read; each person writes only their own.
-    match /profiles/{uid} { allow read: if signedIn(); allow write: if signedIn() && request.auth.uid == uid; }
-    // A student's chat and lessons: that student and the teachers.
-    match /threads/{sid}/{rest=**} { allow read, write: if signedIn() && (request.auth.uid == sid || isTeacher()); }
-    // Live lesson sessions: anyone with the code who is signed in.
-    match /sessions/{code}/{rest=**} { allow read, write: if signedIn(); }
+    match /data/users/{uid}/{rest=**} { allow read, write: if signedIn() && me() == uid; }
+
+    // Join codes point to a class.
+    match /classCodes/{code} {
+      allow read: if signedIn();
+      allow create: if isTeacherUser() && get(/databases/$(database)/documents/classes/$(request.resource.data.cid)).data.teacherId == me();
+    }
+    // Classes: teachers create and manage their own; a student may only add themself with the code.
+    match /classes/{cid} {
+      allow read: if signedIn();
+      allow create: if isTeacherUser() && request.resource.data.teacherId == me();
+      allow update: if isTeacherOf(cid)
+        || (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds'])
+            && request.resource.data.studentIds.hasAll(resource.data.studentIds)
+            && request.resource.data.studentIds.size() == resource.data.studentIds.size() + 1
+            && me() in request.resource.data.studentIds);
+      allow delete: if isTeacherOf(cid);
+
+      // Today's plan: the teacher writes it, the student reads their own.
+      match /plans/{sid} { allow read: if isTeacherOf(cid) || me() == sid; allow write: if isTeacherOf(cid); }
+      // Attendance and queue: the class reads it, the teacher writes it.
+      match /days/{date} { allow read: if isTeacherOf(cid) || inClass(cid); allow write: if isTeacherOf(cid); }
+      // Recitation records: the teacher writes them, each student reads their own.
+      match /records/{rid} { allow read: if isTeacherOf(cid) || resource.data.sid == me(); allow write: if isTeacherOf(cid); }
+      // Chat between the class teacher and one student.
+      match /chat/{sid}/msgs/{mid} { allow read, create: if isTeacherOf(cid) || me() == sid; }
+    }
+    // Live lesson sessions: anyone signed in who has the code.
     match /sessions/{code} { allow read, write: if signedIn(); }
+    match /sessions/{code}/{rest=**} { allow read, write: if signedIn(); }
   }
 }

@@ -35,24 +35,31 @@ To update the app later, upload the changed files again; installed apps pick up 
 - Messages, lesson codes and results are delivered when both people have the app open. Anything sent while the other person is offline waits on your device and is delivered when you both next have the app open.
 - Live lessons, automatic mistake marking and teacher corrections work the same way.
 
-### Firebase (messages always delivered, like WhatsApp)
+### Accounts and classes (Firebase)
 
-1. Go to <https://console.firebase.google.com>, sign in with a Google account, and **Add project** (Google Analytics is not needed).
-2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable.**
-3. **Build → Firestore Database → Create database** (production mode, a location near you).
-4. In Firestore, open **Rules**, replace everything with the contents of `firestore.rules` from this folder, and **Publish**.
-5. **Project settings (⚙) → General → Your apps → Web (</>)**, register the app, and copy the `firebaseConfig` values.
-6. Open `firebase-config.js` in this folder and replace `window.MNB_FIREBASE = null;` with your values, for example:
+With Firebase switched on, everyone signs up with an email and password as a **student** or a **teacher**:
+
+- **Teachers** create classes, each with a join code and a timetable. For every class they see all students, take **attendance**, run the **recitation queue** (Call next student), set each student's **Sabaq, Sabqi and Murajaah** for today, record each recitation as **Passed or Repeat** with grade, mistakes and comment, and see a **class summary**: where each student is reciting, their pass rate and their most common mistake.
+- **Students** join a class with the code and see today's Sabaq, Sabqi and Murajaah, their **place in the queue** (with a message when it's their turn), the **learning times**, and their **daily summary** of what the teacher marked and commented. Students who join no class learn on their own.
+- Every teacher comment, note and chat message has a **Translate** button that translates it into the reader's chosen language. This is machine translation by MyMemory, and its quality varies, especially for Somali and Swahili.
+
+**Switching it on (about 10 minutes):**
+
+1. Go to <https://console.firebase.google.com>, sign in with a Google account and **Add project** (Google Analytics is not needed).
+2. **Build → Authentication → Get started → Sign-in method → Email/Password → Enable → Save.**
+3. **Authentication → Settings → Authorized domains → Add domain:** `pama7786.github.io`
+4. **Build → Firestore Database → Create database** (production mode, a location near you).
+5. In Firestore, open **Rules**, replace everything with the contents of `firestore.rules` from this repository, and **Publish**.
+6. **Project settings (⚙) → General → Your apps → Web (</>)**, register the app, and copy the `firebaseConfig` values.
+7. Edit `firebase-config.js` in this repository and replace `window.MNB_FIREBASE = null;` with your values:
 
    ```js
    window.MNB_FIREBASE = { apiKey: "AIza…", authDomain: "your-app.firebaseapp.com", projectId: "your-app", appId: "1:…:web:…" };
    ```
 
-   Upload the changed `firebase-config.js` to GitHub.
-7. **Make someone a teacher:** they open the app, choose **I'm a teacher**, and the app shows their App ID. In Firestore, create collection `config`, document `teachers`, with a field `uids` of type **array** containing that App ID. Add more teachers to the same array.
-8. **Authentication → Settings → Authorized domains:** add `YOUR-NAME.github.io`.
+   Commit the change. The live app picks it up within a minute or two.
 
-With Firebase on, each student's chat and lessons are visible only to that student and the teachers listed in `config/teachers`. Identities are anonymous and tied to the device: reinstalling the app or clearing the browser creates a new App ID.
+The Firebase `apiKey` is not a secret: it identifies your project, and the security rules decide who can read and write what. Each student sees only their own plan, records and chat, and only the class teacher can change them.
 
 ## Sources and licences
 

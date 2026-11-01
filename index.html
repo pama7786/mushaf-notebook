@@ -375,6 +375,43 @@ body.ui-rtl .panel .pbody{text-align:right}
 .appid{display:flex;align-items:center;gap:8px;background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted)}
 .appid b{font-size:15px;letter-spacing:.12em;color:var(--fg);font-variant-numeric:tabular-nums}
 .appid .btn{height:28px}
+.auth{max-width:420px;margin:30px auto;display:grid;gap:10px}
+.auth h2{margin:0}
+.auth .hcard{padding:12px;text-align:center}
+.hcard.on{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.btn.wide{width:100%;justify-content:center;height:42px}
+.authlinks{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;font:inherit;font-size:13px;cursor:pointer;padding:0}
+#clsPick{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--paper);max-width:220px}
+.todaygrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.tcard{background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:4px;align-content:start}
+.tcard b{font-size:16px}
+.trange{font-size:13px}
+.pnote{background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:13.5px}
+.qbox{background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.qbox.now{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--chrome))}
+.roster{display:grid;gap:4px;margin-bottom:8px}
+.rrow{display:grid;grid-template-columns:minmax(0,1.3fr) auto auto minmax(0,.8fr);gap:8px;align-items:center;background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.rrow.now{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.rname{display:grid;min-width:0}
+.ratt{display:flex;gap:3px}
+.chipb{border:1px solid var(--line);background:var(--paper);border-radius:999px;font-size:11.5px;padding:3px 8px;cursor:pointer;color:var(--fg)}
+.chipb.on.present{background:var(--ok);border-color:var(--ok);color:#fff}
+.chipb.on.late{background:var(--warn);border-color:var(--warn);color:#fff}
+.chipb.on.absent{background:var(--m-hifz);border-color:var(--m-hifz);color:#fff}
+@media (max-width:640px){.rrow{grid-template-columns:1fr 1fr}.todaygrid{grid-template-columns:1fr}}
+.sumtable{display:grid;gap:2px;font-size:12.5px;overflow-x:auto}
+.sumtable .sh,.sumtable .sr{display:grid;grid-template-columns:1.2fr 1.4fr .6fr .6fr 1fr;gap:6px;padding:5px 8px;min-width:520px}
+.sumtable .sh{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.sumtable .sr{background:var(--chrome);border-radius:6px}
+.sched{display:grid;gap:4px;margin-bottom:6px}
+.srow{display:flex;gap:6px;align-items:center}
+.srow select,.srow input{height:30px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.pedit{display:grid;gap:6px;background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:10px}
+.prow{display:grid;grid-template-columns:auto 1fr 90px 90px;gap:6px;align-items:center}
+.prow input,.prow select{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--paper);padding:0 8px;min-width:0}
+.trbtn{border:0;background:none;color:var(--accent);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:0 4px}
+.trout{font-style:italic;color:var(--fg)}
 .keyq{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .keyq i{width:12px;height:12px;border-radius:3px;background:var(--c);display:inline-block}
 .mg::placeholder{color:color-mix(in srgb,var(--muted) 55%,transparent)}
@@ -740,11 +777,12 @@ async function connect() {
   if ((!c || !c.use) && fbc && fbc.apiKey) {
     try {
       const fb = await initFirebase(fbc);
-      P2P.on = false; cloud.fb = true;
-      cloud.db = fb.db; cloud.uid = fb.uid; cloud.user = fb.user; cloud.col = fb.db.collection('data/users/' + fb.uid); cloud.state = 'on';
-      for (const p of Object.keys(dirty)) flush(+p);
-      visible().forEach(loadCloudPage);
-      loadHome().then(() => { if (!HOME.role) openDash('list'); });
+      P2P.on = false; cloud.fb = true; cloud.fbApp = true; cloud.fbDb = fb.db; cloud.db = fb.db; cloud.state = 'connecting';
+      cloud.user = { id: async () => cloud.uid, isOwner: async () => false, can: async () => true, canEdit: async () => !!(CLS.me && CLS.me.role === 'teacher') };
+      firebase.auth().onAuthStateChanged(u => {
+        if (u) onSignedIn(u);
+        else { clsUnsubAll(); CLS.user = null; CLS.me = null; CLS.classes = []; CLS.cid = null; CLS.cls = null; cloud.col = null; cloud.state = 'off'; refreshStatus(); if (!CLS.skip) openDash('list'); }
+      });
       refreshStatus(); return;
     } catch (e) { console.warn('Firebase could not start; using direct mode', e); }
   }
@@ -1177,12 +1215,20 @@ function openDash(view, id) {
 }
 function closeDash() { $('#dash').hidden = true; document.body.classList.remove('dash-open'); }
 function renderDash() {
+  if (cloud.fbApp && !CLS.skip) {
+    $('.dbar h2').textContent = CLS.user ? (CLS.me && CLS.me.role === 'teacher' ? 'Teacher dashboard' : 'Student dashboard') : 'Mushaf Notebook';
+    $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; $('.dnote').hidden = true;
+    $('#dBody').innerHTML = clsHtml();
+    if (CLS.user && CLS.cls) { const sid = CLS.me.role === 'teacher' ? CLS.sid : cloud.uid; if (sid && CLS.chatSid !== sid) clsOpenChat(sid); else renderClsChat(); }
+    return;
+  }
   const online = onlineMode();
   $('.dbar h2').textContent = online ? (HOME.role === 'teacher' ? 'Teacher dashboard' : HOME.role === 'student' ? 'Student dashboard' : 'Mushaf Notebook') : 'Teacher dashboard';
   $('#dAdd').hidden = online; $('#dBackup').hidden = online || inViewer; $('#dRestore').parentElement.hidden = online;
   $('#dSearch').hidden = online && HOME.role !== 'teacher';
   $('.dnote').hidden = online;
   if (online) { $('#dBody').innerHTML = homeHtml(); renderChat(); return; }
+  if (cloud.fbApp && CLS.skip) $('#dBody').insertAdjacentHTML('beforebegin', '');
   const lr = lsGet('localRole');
   if (!lr) { $('.dbar h2').textContent = 'Mushaf Notebook'; $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; PCHAT.open = null; $('#dBody').innerHTML = localRoleHtml(); return; }
   if (lr === 'student') { $('.dbar h2').textContent = 'Student dashboard'; $('#dAdd').hidden = true; $('#dBackup').hidden = true; $('#dRestore').parentElement.hidden = true; $('#dSearch').hidden = true; PCHAT.open = lsGet('myteacher') || null; $('#dBody').innerHTML = localStudentHtml(); renderPChat(); return; }
@@ -1234,9 +1280,9 @@ function startLessonFor(id) {
   SES.msg = ''; tab = 'ses'; renderPanel(); $('#panel').classList.add('open');
   setTimeout(() => { const el = $('#sesCode'); if (el) el.focus(); }, 50);
 }
-function studentName(id) { if (onlineMode()) return id ? studentLabel(id) : ''; const s = id && roster().students[id]; return s ? s.name || 'Unnamed student' : ''; }
+function studentName(id) { if (cloud.fbApp) return id ? memberName(id) : ''; if (onlineMode()) return id ? studentLabel(id) : ''; const s = id && roster().students[id]; return s ? s.name || 'Unnamed student' : ''; }
 function studentLine() {
-  const opts = onlineMode() ? HOME.students : Object.values(roster().students);
+  const opts = cloud.fbApp && CLS.cls ? (CLS.cls.studentIds || []).map(id => ({id, name: memberName(id), place: (CLS.members[id] || {}).place || ''})) : onlineMode() ? HOME.students : Object.values(roster().students);
   const nm = SES.studentName ? ` · they call themself <b>${esc(SES.studentName)}</b>` : '';
   return `<div class="sline"><span>Student:</span><select id="sesStudent"><option value="">Choose a student slot…</option>${opts.map(s => `<option value="${s.id}"${s.id === SES.student ? ' selected' : ''}>${esc(s.name || 'Unnamed')}${s.place ? ' · ' + esc(s.place) : ''}</option>`).join('')}${onlineMode() ? '' : `<option value="__new">+ New student${SES.studentName ? ': ' + esc(SES.studentName) : ''}</option>`}</select>${nm}</div>`;
 }
@@ -1456,6 +1502,7 @@ async function joinAsStudent(code) {
 }
 async function saveLessonOnline(lesson) {
   const sid = SES.student; if (!sid) return false;
+  if (cloud.fbApp && CLS.cid) return clsSaveRecord({...lesson, sid});
   try {
     await cloud.db.collection(`threads/${sid}/lessons`).add({...lesson, teacher: cloud.uid});
     const t = lesson.grade ? gradeTotals(lesson.grade) : null;
@@ -1662,8 +1709,62 @@ const UI_ROWS = [
 ['Translation · Sahih International','الترجمة · صحيح إنترناشونال','Tarjumaad · Sahih International','Traduction · Sahih International','ترجمہ · صحیح انٹرنیشنل','Meal · Sahih International','Terjemahan · Sahih International','Tafsiri · Sahih International'],
 ['None','بدون','Midna','Aucune','کوئی نہیں','Yok','Tidak ada','Hakuna'],
 ['Nothing','لا شيء','Waxba','Rien','کچھ نہیں','Hiçbiri','Tidak ada','Hakuna kitu'],
+["Sign in","تسجيل الدخول","Gal","Se connecter","سائن ان","Giriş yap","Masuk","Ingia"],
+["Sign out","تسجيل الخروج","Ka bax","Se déconnecter","سائن آؤٹ","Çıkış yap","Keluar","Toka"],
+["Create your account","أنشئ حسابك","Samee akoonkaaga","Créez votre compte","اپنا اکاؤنٹ بنائیں","Hesabınızı oluşturun","Buat akun Anda","Fungua akaunti yako"],
+["Create account","إنشاء حساب","Samee akoon","Créer le compte","اکاؤنٹ بنائیں","Hesap oluştur","Buat akun","Fungua akaunti"],
+["Email","البريد الإلكتروني","Iimayl","E-mail","ای میل","E-posta","Email","Barua pepe"],
+["Password","كلمة المرور","Furaha sirta","Mot de passe","پاس ورڈ","Şifre","Kata sandi","Nenosiri"],
+["I already have an account","لدي حساب بالفعل","Horay baan akoon u lahaa","J'ai déjà un compte","میرا اکاؤنٹ پہلے سے ہے","Zaten hesabım var","Saya sudah punya akun","Nina akaunti tayari"],
+["Create a new account","إنشاء حساب جديد","Samee akoon cusub","Créer un nouveau compte","نیا اکاؤنٹ بنائیں","Yeni hesap oluştur","Buat akun baru","Fungua akaunti mpya"],
+["Forgot password?","نسيت كلمة المرور؟","Ma ilowday furaha?","Mot de passe oublié ?","پاس ورڈ بھول گئے؟","Şifremi unuttum?","Lupa kata sandi?","Umesahau nenosiri?"],
+["Continue without an account","المتابعة بدون حساب","Ku sii wad akoon la’aan","Continuer sans compte","اکاؤنٹ کے بغیر جاری رکھیں","Hesapsız devam et","Lanjut tanpa akun","Endelea bila akaunti"],
+["Sign in or create an account","سجّل الدخول أو أنشئ حساباً","Gal ama samee akoon","Se connecter ou créer un compte","سائن ان کریں یا اکاؤنٹ بنائیں","Giriş yap veya hesap oluştur","Masuk atau buat akun","Ingia au fungua akaunti"],
+["New lesson","الدرس الجديد","Cashar cusub","Nouvelle leçon","نیا سبق","Yeni ders","Pelajaran baru","Somo jipya"],
+["Recent revision","مراجعة قريبة","Dib-u-eegis dhow","Révision récente","حالیہ دہرائی","Yakın tekrar","Murajaah baru","Marudio ya karibuni"],
+["Old revision","مراجعة قديمة","Dib-u-eegis hore","Révision ancienne","پرانی دہرائی","Eski tekrar","Murajaah lama","Marudio ya zamani"],
+["Teacher's note:","ملاحظة المعلم:","Qoraalka macallinka:","Note de l'enseignant :","استاد کا نوٹ:","Öğretmen notu:","Catatan guru:","Maelezo ya mwalimu:"],
+["You have recited today.","لقد قرأت اليوم.","Maanta waad akhrisay.","Vous avez récité aujourd'hui.","آپ نے آج تلاوت کر لی۔","Bugün okudunuz.","Anda sudah membaca hari ini.","Umesoma leo."],
+["You are not in today's queue yet.","لست في قائمة اليوم بعد.","Weli kuma jirtid safka maanta.","Vous n'êtes pas encore dans la file du jour.","آپ ابھی آج کی قطار میں نہیں ہیں۔","Henüz bugünkü sırada değilsiniz.","Anda belum masuk antrean hari ini.","Bado hujawekwa kwenye foleni ya leo."],
+["It's your turn to recite now.","حان دورك في القراءة الآن.","Hadda waa markaaga aad akhrido.","C’est votre tour de réciter.","اب آپ کی تلاوت کی باری ہے۔","Şimdi okuma sırası sizde.","Sekarang giliran Anda membaca.","Sasa ni zamu yako kusoma."],
+["Learning time:","وقت التعلم:","Waqtiga waxbarashada:","Heure d'apprentissage :","سیکھنے کا وقت:","Ders saati:","Waktu belajar:","Muda wa kujifunza:"],
+["My classes","فصولي","Fasalladayda","Mes classes","میری کلاسیں","Sınıflarım","Kelas saya","Madarasa yangu"],
+["Create a class","إنشاء فصل","Samee fasal","Créer une classe","کلاس بنائیں","Sınıf oluştur","Buat kelas","Fungua darasa"],
+["Create","إنشاء","Samee","Créer","بنائیں","Oluştur","Buat","Unda"],
+["Open class","فتح الفصل","Fur fasalka","Ouvrir la classe","کلاس کھولیں","Sınıfı aç","Buka kelas","Fungua darasa"],
+["All my classes","كل فصولي","Dhammaan fasalladayda","Toutes mes classes","میری تمام کلاسیں","Tüm sınıflarım","Semua kelas saya","Madarasa yangu yote"],
+["← All classes","← كل الفصول","← Dhammaan fasallada","← Toutes les classes","← تمام کلاسیں","← Tüm sınıflar","← Semua kelas","← Madarasa yote"],
+["Present","حاضر","Joogo","Présent","حاضر","Var","Hadir","Yupo"],
+["Late","متأخر","Daahay","En retard","دیر سے","Geç","Terlambat","Amechelewa"],
+["Absent","غائب","Maqan","Absent","غیر حاضر","Yok","Absen","Hayupo"],
+["+ Queue","+ إلى القائمة","+ Safka","+ File","+ قطار","+ Sıraya ekle","+ Antrean","+ Foleni"],
+["Recited","قرأ","Akhriyay","A récité","تلاوت کی","Okudu","Sudah membaca","Amesoma"],
+["Reciting","يقرأ الآن","Akhrinaya","Récite","تلاوت کر رہا ہے","Okuyor","Sedang membaca","Anasoma"],
+["▶ Call next student","▶ استدعِ الطالب التالي","▶ U yeer ardayga xiga","▶ Appeler l’élève suivant","▶ اگلے طالب علم کو بلائیں","▶ Sıradaki öğrenciyi çağır","▶ Panggil murid berikutnya","▶ Mwite mwanafunzi anayefuata"],
+["Queue everyone present","أضف كل الحاضرين للقائمة","Safka geli dhammaan joogga","Mettre tous les présents en file","تمام حاضرین کو قطار میں لگائیں","Gelenlerin hepsini sıraya al","Antrekan semua yang hadir","Weka waliopo wote kwenye foleni"],
+["Clear queue","مسح القائمة","Tirtir safka","Vider la file","قطار صاف کریں","Sırayı temizle","Kosongkan antrean","Futa foleni"],
+["Class summary","ملخص الفصل","Soo koobidda fasalka","Résumé de la classe","کلاس کا خلاصہ","Sınıf özeti","Ringkasan kelas","Muhtasari wa darasa"],
+["Timetable","الجدول","Jadwalka","Emploi du temps","نظام الاوقات","Ders programı","Jadwal","Ratiba"],
+["+ Add a learning time","+ أضف وقت تعلم","+ Ku dar waqti waxbarasho","+ Ajouter un horaire","+ سیکھنے کا وقت شامل کریں","+ Ders saati ekle","+ Tambah waktu belajar","+ Ongeza muda wa kujifunza"],
+["Today's plan","خطة اليوم","Qorshaha maanta","Programme du jour","آج کا منصوبہ","Bugünün planı","Rencana hari ini","Mpango wa leo"],
+["Save today's plan","احفظ خطة اليوم","Kaydi qorshaha maanta","Enregistrer le programme","آج کا منصوبہ محفوظ کریں","Bugünün planını kaydet","Simpan rencana hari ini","Hifadhi mpango wa leo"],
+["Record a recitation","سجّل تلاوة","Diiwaangeli akhris","Enregistrer une récitation","تلاوت درج کریں","Okumayı kaydet","Catat bacaan","Rekodi usomaji"],
+["Save record","احفظ السجل","Kaydi diiwaanka","Enregistrer","ریکارڈ محفوظ کریں","Kaydı kaydet","Simpan catatan","Hifadhi rekodi"],
+["Translate","ترجمة","Turjun","Traduire","ترجمہ کریں","Çevir","Terjemahkan","Tafsiri"],
+["Join class","انضم للفصل","Ku biir fasalka","Rejoindre la classe","کلاس میں شامل ہوں","Sınıfa katıl","Gabung kelas","Jiunge na darasa"],
+["Join another class","انضم لفصل آخر","Ku biir fasal kale","Rejoindre une autre classe","دوسری کلاس میں شامل ہوں","Başka sınıfa katıl","Gabung kelas lain","Jiunge na darasa jingine"],
+["You're learning on your own","أنت تتعلم بمفردك","Kaligaa ayaad wax u baranaysaa","Vous apprenez seul","آپ خود سیکھ رہے ہیں","Kendi başınıza öğreniyorsunuz","Anda belajar sendiri","Unajifunza peke yako"],
+["Note for the student","ملاحظة للطالب","Qoraal ardayga loogu talagalay","Note pour l'élève","طالب علم کے لیے نوٹ","Öğrenci için not","Catatan untuk murid","Maelezo kwa mwanafunzi"],
+["Comment for the student","تعليق للطالب","Faallo ardayga","Commentaire pour l'élève","طالب علم کے لیے تبصرہ","Öğrenci için yorum","Komentar untuk murid","Maoni kwa mwanafunzi"],
+["Teacher","معلم","Macallin","Enseignant","استاد","Öğretmen","Guru","Mwalimu"],
+["Student","طالب","Arday","Élève","طالب علم","Öğrenci","Murid","Mwanafunzi"],
+["Open class","فتح الفصل","Fur fasalka","Ouvrir la classe","کلاس کھولیں","Sınıfı aç","Buka kelas","Fungua darasa"],
 ];
 const UI_PATTERNS = [
+  [/^My daily summary · (\d+) recitations · (\d+) passed$/, ['ملخصي اليومي · $1 تلاوات · $2 ناجحة','Soo koobiddayda maalinlaha · $1 akhris · $2 gudbay','Mon résumé du jour · $1 récitations · $2 réussies','میرا روزانہ خلاصہ · $1 تلاوتیں · $2 کامیاب','Günlük özetim · $1 okuma · $2 geçti','Ringkasan harian saya · $1 bacaan · $2 lulus','Muhtasari wangu wa kila siku · usomaji $1 · $2 umefaulu']],
+  [/^Records \((\d+)\)$/, ['السجلات ($1)','Diiwaanno ($1)','Enregistrements ($1)','ریکارڈ ($1)','Kayıtlar ($1)','Catatan ($1)','Rekodi ($1)']],
+  [/^My classes \((\d+)\)$/, ['فصولي ($1)','Fasalladayda ($1)','Mes classes ($1)','میری کلاسیں ($1)','Sınıflarım ($1)','Kelas saya ($1)','Madarasa yangu ($1)']],
+  [/^You are number (\d+) in the queue\.$/, ['ترتيبك $1 في القائمة.','Waxaad tahay lambarka $1 ee safka.','Vous êtes n° $1 dans la file.','آپ قطار میں $1 نمبر پر ہیں۔','Sırada $1. sıradasınız.','Anda nomor $1 di antrean.','Wewe ni namba $1 kwenye foleni.']],
   [/^Teacher's corrections \((\d+)\)$/, ['تصحيحات المعلم ($1)','Saxitaanka macallinka ($1)','Corrections de l’enseignant ($1)','استاد کی اصلاحات ($1)','Öğretmen düzeltmeleri ($1)','Koreksi guru ($1)','Masahihisho ya mwalimu ($1)']],
   [/^My section \((\d+)\)$/, ['قسمي ($1)','Qaybtayda ($1)','Ma partie ($1)','میرا حصہ ($1)','Benim bölümüm ($1)','Bagian saya ($1)','Sehemu yangu ($1)']],
   [/^Automatic \((\d+)\)$/, ['تلقائي ($1)','Si toos ah ($1)','Automatique ($1)','خودکار ($1)','Otomatik ($1)','Otomatis ($1)','Kiotomatiki ($1)']],
@@ -1710,7 +1811,7 @@ function uiTranslate(root) {
   while (n) { uiTranslateNode(n); n = walker.nextNode(); }
 }
 let uiRaf = 0;
-const uiObserver = new MutationObserver(() => { if (uiLang === 'en' && !uiWasOther) return; if (!uiRaf) uiRaf = requestAnimationFrame(() => { uiRaf = 0; uiTranslate(); }); });
+const uiObserver = new MutationObserver(() => { if (uiLang === 'en' && !uiWasOther) return; if (!uiRaf) uiRaf = setTimeout(() => { uiRaf = 0; uiTranslate(); }, 30); });
 let uiWasOther = false;
 function setUiLang(lang, fromUser) {
   uiLang = UI_LANGS.some(l => l[0] === lang) ? lang : 'en';
@@ -1813,7 +1914,7 @@ function pUnread(other) { const seen = lsGet('pseen:' + other) || 0; return pThr
 
 /* offline dashboards: choose a role on this device */
 function localRoleHtml() {
-  return `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose once. You can change it later.</p>
+  return (cloud.fbApp ? '<div class="nact" style="justify-content:center"><button class="btn primary" id="aBack">Sign in or create an account</button></div>' : '') + `<div class="hrole"><h2>Assalamu alaikum. Who are you?</h2><p class="sub">Choose once. You can change it later.</p>
     <div class="hcards"><button class="hcard" data-lrole="student"><b>I'm a student</b><span>Your lessons, results and a chat with your teacher.</span></button>
     <button class="hcard" data-lrole="teacher"><b>I'm a teacher</b><span>All your students, their mistakes, grading and a chat with each one.</span></button></div></div>`;
 }
@@ -1848,19 +1949,332 @@ async function p2pTeacherLesson(sid) {
 /* Firebase: when the app is installed with a Firebase project (firebase-config.js), chat, dashboards and lessons go through it */
 function loadScript(src) { return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error(src)); document.head.appendChild(el); }); }
 async function initFirebase(cfg) {
-  const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
-  for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(base + f);
-  firebase.initializeApp(cfg);
+  if (!window.firebase) { const base = 'https://www.gstatic.com/firebasejs/10.12.2/'; for (const f of ['firebase-app-compat.js', 'firebase-auth-compat.js', 'firebase-firestore-compat.js']) await loadScript(base + f); }
+  if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
   const db = firebase.firestore();
   try { await db.enablePersistence({synchronizeTabs: true}); } catch {}
-  const cred = await firebase.auth().signInAnonymously();
-  const uid = cred.user.uid;
-  const user = {
-    id: async () => uid, isOwner: async () => false, can: async () => true,
-    canEdit: async () => { try { const d = await db.doc('config/teachers').get(); return !!(d.exists && (d.data().uids || []).includes(uid)); } catch { return false; } },
-  };
-  return {db, uid, user};
+  return {db};
 }
+/* ---------------- accounts and classes (Firebase) ----------------
+   users/{uid}                     {role, name, place, email, lang, classIds:[], created}
+   classCodes/{CODE}               {cid}
+   classes/{cid}                   {name, teacherId, teacherName, code, schedule:[{d,s,e}], studentIds:[], created}
+   classes/{cid}/plans/{sid}       {sabaq:{from,to}, sabqi:{from,to}, murajaah:{from,to}, note, lang, updated}
+   classes/{cid}/days/{YYYY-MM-DD} {att:{sid:'present'|'late'|'absent'}, queue:[sid], current:sid|null, done:[sid]}
+   classes/{cid}/records/{id}      {sid, date, t, type, from, to, result, grade, marks:[{k,c,n}], comment, lang, teacherId}
+   classes/{cid}/chat/{sid}/msgs   chat between the class teacher and one student */
+const CLS = { user: null, me: null, classes: [], cid: null, cls: null, members: {}, plans: {}, day: null, records: [], view: 'home', sid: null, unsub: [], chatUnsub: null, msgs: [], authMode: 'in', authMsg: '', busy: false };
+const TYPES = [['sabaq', 'Sabaq', 'New lesson'], ['sabqi', 'Sabqi', 'Recent revision'], ['murajaah', 'Murajaah', 'Old revision']];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const fbdb = () => cloud.db;
+function clsUnsubAll() { CLS.unsub.forEach(u => { try { u(); } catch {} }); CLS.unsub = []; if (CLS.chatUnsub) { try { CLS.chatUnsub(); } catch {} CLS.chatUnsub = null; } }
+function parseRef(t) { const m = String(t || '').trim().match(/^(\d{1,3})\s*[:.]\s*(\d{1,3})$/); if (!m) return null; const s = +m[1], a = +m[2]; return Q.a[s - 1] && Q.a[s - 1][a - 1] !== undefined ? `${s}:${a}` : null; }
+function rangeLabel(r) { if (!r || !r.from) return '—'; const [s1, a1] = r.from.split(':').map(Number), [s2, a2] = (r.to || r.from).split(':').map(Number); return s1 === s2 ? `${Q.s[s1 - 1][1]} ${s1}:${a1}–${a2}` : `${Q.s[s1 - 1][1]} ${s1}:${a1} – ${Q.s[s2 - 1][1]} ${s2}:${a2}`; }
+function rangePage(r) { if (!r || !r.from) return null; const [s, a] = r.from.split(':').map(Number); return Q.p[s - 1][a - 1]; }
+function nextClassTime(sched) {
+  if (!sched || !sched.length) return null;
+  const now = new Date(); let best = null;
+  for (let add = 0; add < 8; add++) {
+    const d = new Date(now); d.setDate(now.getDate() + add);
+    for (const x of sched) if (+x.d === d.getDay()) {
+      const [h, m] = String(x.s || '00:00').split(':').map(Number); const st = new Date(d); st.setHours(h, m, 0, 0);
+      const [h2, m2] = String(x.e || x.s || '00:00').split(':').map(Number); const en = new Date(d); en.setHours(h2, m2, 0, 0);
+      if (en > now && (!best || st < best.st)) best = {st, en, x};
+    }
+    if (best) break;
+  }
+  return best;
+}
+
+/* ---- translation of comments (MyMemory, free, no key) ---- */
+async function translateText(text, from, to) {
+  const key = 'tr:' + from + '|' + to + ':' + text.slice(0, 200);
+  const hit = lsGet(key); if (hit) return hit;
+  const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 480))}&langpair=${from}|${to}`);
+  const d = await r.json(); const out = d && d.responseData && d.responseData.translatedText;
+  if (!out) throw new Error('no');
+  lsSet(key, out); return out;
+}
+function trBtn(text, lang) {
+  if (!text || !lang || lang === uiLang) return '';
+  return `<button class="trbtn" data-trtext="${esc(text)}" data-trfrom="${esc(lang)}">Translate</button><span class="trout"></span>`;
+}
+
+/* ---- sign up / sign in ---- */
+function authHtml() {
+  const up = CLS.authMode === 'up';
+  return `<div class="auth"><h2>${up ? 'Create your account' : 'Sign in'}</h2>
+    <p class="sub">${up ? 'Students join their teacher\'s class. Teachers create classes for their students.' : 'Sign in to see your class, your lessons and your teacher\'s notes.'}</p>
+    ${up ? `<div class="hcards" style="margin-bottom:10px"><button class="hcard${CLS.newRole !== 'teacher' ? ' on' : ''}" data-arole="student"><b>I'm a student</b></button><button class="hcard${CLS.newRole === 'teacher' ? ' on' : ''}" data-arole="teacher"><b>I'm a teacher</b></button></div>
+      <label class="dfield"><span>Full name</span><input id="aName" autocomplete="name"></label>
+      <label class="dfield"><span>Place</span><input id="aPlace" placeholder="City or mosque"></label>` : ''}
+    <label class="dfield"><span>Email</span><input id="aEmail" type="email" autocomplete="email"></label>
+    <label class="dfield"><span>Password</span><input id="aPass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="${up ? 'At least 6 characters' : ''}"></label>
+    ${CLS.authMsg ? `<p class="serr">${esc(CLS.authMsg)}</p>` : ''}
+    <button class="btn primary wide" id="aGo"${CLS.busy ? ' disabled' : ''}>${up ? 'Create account' : 'Sign in'}</button>
+    <div class="authlinks"><button class="linkbtn" id="aSwitch">${up ? 'I already have an account' : 'Create a new account'}</button>${up ? '' : '<button class="linkbtn" id="aForgot">Forgot password?</button>'}<button class="linkbtn" id="aSkip">Continue without an account</button></div></div>`;
+}
+function authError(e) {
+  const c = e && e.code || '';
+  return c.includes('invalid-email') ? 'That email address doesn\'t look right.'
+    : c.includes('email-already') ? 'An account with this email already exists. Sign in instead.'
+    : c.includes('weak-password') ? 'Use a password of at least 6 characters.'
+    : c.includes('wrong-password') || c.includes('invalid-credential') || c.includes('user-not-found') ? 'The email or password is wrong.'
+    : c.includes('network') ? 'No internet connection. Try again when you\'re online.'
+    : c.includes('too-many') ? 'Too many tries. Wait a moment and try again.'
+    : 'Something went wrong. Try again.';
+}
+async function doAuth() {
+  const email = $('#aEmail').value.trim(), pass = $('#aPass').value, name = ($('#aName') || {}).value || '', place = ($('#aPlace') || {}).value || '';
+  CLS.busy = true; CLS.authMsg = ''; renderDash();
+  try {
+    if (CLS.authMode === 'up') {
+      if (!name.trim()) throw {code: 'name'};
+      CLS.pendingProfile = {role: CLS.newRole === 'teacher' ? 'teacher' : 'student', name: name.trim().slice(0, 80), place: place.trim().slice(0, 80), email, lang: uiLang, classIds: [], created: Date.now()};
+      await firebase.auth().createUserWithEmailAndPassword(email, pass);
+    } else await firebase.auth().signInWithEmailAndPassword(email, pass);
+  } catch (e) { CLS.authMsg = e && e.code === 'name' ? 'Please write your full name.' : authError(e); }
+  CLS.busy = false; renderDash();
+}
+async function onSignedIn(u) {
+  CLS.user = u; cloud.uid = u.uid; cloud.col = fbdb().collection('data/users/' + u.uid); cloud.state = 'on';
+  for (const p of Object.keys(dirty)) flush(+p);
+  visible().forEach(loadCloudPage); refreshStatus();
+  if (CLS.pendingProfile) { CLS.me = CLS.pendingProfile; CLS.pendingProfile = null; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
+  else { for (let i = 0; i < 6 && !CLS.me; i++) { try { const d = await fbdb().doc('users/' + u.uid).get(); CLS.me = d.exists ? d.data() : null; } catch {} if (!CLS.me) await new Promise(r => setTimeout(r, 500)); } }
+  if (!CLS.me) { CLS.me = {role: 'student', name: u.email || 'Student', classIds: [], created: Date.now()}; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
+  if (CLS.me.lang && CLS.me.lang !== uiLang && !lsGet('prefs')?.ui) setUiLang(CLS.me.lang);
+  await clsLoad();
+  openDash('list');
+}
+async function clsLoad() {
+  CLS.classes = [];
+  try {
+    if (CLS.me.role === 'teacher') { const qs = await fbdb().collection('classes').where('teacherId', '==', cloud.uid).get(); CLS.classes = qs.docs.map(d => ({id: d.id, ...d.data()})); }
+    else for (const cid of CLS.me.classIds || []) { try { const d = await fbdb().doc('classes/' + cid).get(); if (d.exists) CLS.classes.push({id: d.id, ...d.data()}); } catch {} }
+  } catch {}
+  CLS.classes.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  if (CLS.cid && !CLS.classes.some(c => c.id === CLS.cid)) CLS.cid = null;
+  if (!CLS.cid && CLS.classes.length && CLS.me.role === 'student') CLS.cid = CLS.classes[0].id;
+  if (CLS.cid) await clsOpenClass(CLS.cid); else if (!$('#dash').hidden) renderDash();
+}
+async function clsOpenClass(cid) {
+  clsUnsubAll(); CLS.cid = cid; CLS.cls = CLS.classes.find(c => c.id === cid) || null; CLS.members = {}; CLS.plans = {}; CLS.records = []; CLS.day = null;
+  if (!CLS.cls) return renderDash();
+  const db = fbdb(), base = 'classes/' + cid, isT = CLS.me.role === 'teacher';
+  CLS.unsub.push(db.doc(base).onSnapshot(s => { if (s.exists) { CLS.cls = {id: cid, ...s.data()}; loadMembers(); } }, () => {}));
+  CLS.unsub.push(db.doc(`${base}/days/${today()}`).onSnapshot(s => {
+    const before = CLS.day && CLS.day.current; CLS.day = s.exists ? s.data() : null;
+    if (!isT && CLS.day && CLS.day.current === cloud.uid && before !== cloud.uid) showToast('It\'s your turn to recite now.', false);
+    renderDashSoft();
+  }, () => {}));
+  if (isT) {
+    CLS.unsub.push(db.collection(`${base}/plans`).onSnapshot(qs => { CLS.plans = {}; qs.docs.forEach(d => CLS.plans[d.id] = d.data()); renderDashSoft(); }, () => {}));
+    CLS.unsub.push(db.collection(`${base}/records`).orderBy('t', 'desc').limit(300).onSnapshot(qs => { CLS.records = qs.docs.map(d => ({id: d.id, ...d.data()})); renderDashSoft(); }, () => {}));
+  } else {
+    CLS.unsub.push(db.doc(`${base}/plans/${cloud.uid}`).onSnapshot(s => { CLS.plans = {[cloud.uid]: s.exists ? s.data() : {}}; renderDashSoft(); }, () => {}));
+    CLS.unsub.push(db.collection(`${base}/records`).where('sid', '==', cloud.uid).onSnapshot(qs => { CLS.records = qs.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => b.t - a.t); renderDashSoft(); }, () => {}));
+  }
+  await loadMembers(); renderDash();
+}
+async function loadMembers() {
+  const ids = [...(CLS.cls.studentIds || []), CLS.cls.teacherId].filter(Boolean);
+  await Promise.all(ids.filter(id => !CLS.members[id]).map(async id => { try { const d = await fbdb().doc('users/' + id).get(); CLS.members[id] = d.exists ? d.data() : {name: 'Student'}; } catch { CLS.members[id] = {name: 'Student'}; } }));
+  renderDashSoft();
+}
+let softT = 0;
+function renderDashSoft() { if ($('#dash').hidden || !cloud.fb) return; clearTimeout(softT); softT = setTimeout(() => { if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#dBody') && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return; renderDash(); }, 120); }
+const memberName = id => (CLS.members[id] || {}).name || 'Student';
+
+/* ---- pages ---- */
+function clsHtml() {
+  if (!CLS.user) return authHtml();
+  const me = CLS.me || {}, isT = me.role === 'teacher';
+  const top = `<div class="hhead"><div><h2>Assalamu alaikum${me.name ? ', ' + esc(me.name.split(' ')[0]) : ''}</h2><div class="sub">${isT ? 'Teacher' : 'Student'} · ${esc(CLS.user.email || '')}</div></div><span class="grow"></span>
+    ${CLS.classes.length > 1 || isT ? `<select id="clsPick" aria-label="Class">${!isT ? '' : '<option value="">All my classes</option>'}${CLS.classes.map(c => `<option value="${c.id}"${c.id === CLS.cid ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : ''}
+    <button class="btn" id="aOut">Sign out</button></div>`;
+  return top + (isT ? teacherClsHtml() : studentClsHtml());
+}
+function studentClsHtml() {
+  if (!CLS.cls) return `<div class="hsplit"><div><div class="sescard"><h4>You're learning on your own</h4><p>Everything you mark is saved to your account. When your teacher gives you a class code, join here.</p>
+    <div class="sesjoin"><input id="joinCode" maxlength="8" placeholder="Class code"><button class="btn primary" id="joinGo">Join class</button></div>${CLS.joinMsg ? `<p class="serr">${esc(CLS.joinMsg)}</p>` : ''}</div>
+    ${ownSummaryHtml()}</div><div></div></div>`;
+  const plan = CLS.plans[cloud.uid] || {}, day = CLS.day || {}, q = day.queue || [], pos = q.indexOf(cloud.uid), cur = day.current;
+  const nxt = nextClassTime(CLS.cls.schedule);
+  const att = (day.att || {})[cloud.uid];
+  const recs = CLS.records;
+  const passN = recs.filter(r => r.result === 'pass').length;
+  return `<div class="hsplit"><div>
+    <div class="sect">${esc(CLS.cls.name)} · teacher ${esc(memberName(CLS.cls.teacherId))}</div>
+    <div class="todaygrid">${TYPES.map(([id, ar, en]) => { const r = plan[id]; return `<div class="tcard"><b>${ar}</b><span class="sub">${en}</span><div class="trange">${esc(rangeLabel(r))}</div>${r && r.from ? `<button class="btn" data-gotor="${esc(r.from)}">Open</button>` : ''}</div>`; }).join('')}</div>
+    ${plan.note ? `<div class="pnote"><b>Teacher's note:</b> <span dir="auto">${esc(plan.note)}</span> ${trBtn(plan.note, plan.lang)}</div>` : ''}
+    <div class="qbox ${cur === cloud.uid ? 'now' : ''}">${cur === cloud.uid ? '<b>It\'s your turn to recite now.</b>' : pos >= 0 ? `<b>You are number ${pos + 1} in the queue.</b> ${cur ? `Now reciting: ${esc(memberName(cur))}.` : ''} ${pos > 0 && q[pos - 1] ? '' : ''}` : (day.done || []).includes(cloud.uid) ? '<b>You have recited today.</b>' : 'You are not in today\'s queue yet.'}
+      ${att ? ` <span class="pill ${att === 'absent' ? 'fail' : 'pass'}">${att === 'present' ? 'Present' : att === 'late' ? 'Late' : 'Absent'}</span>` : ''}</div>
+    <div class="qbox"><b>Learning time:</b> ${nxt ? `${DAYS[nxt.st.getDay()]} ${nxt.x.s}–${nxt.x.e} (${dayLabel(nxt.st)})` : 'Your teacher hasn\'t set a timetable yet.'}
+      ${(CLS.cls.schedule || []).length ? `<div class="sub">${CLS.cls.schedule.map(x => `${DAYS[x.d]} ${x.s}–${x.e}`).join(' · ')}</div>` : ''}</div>
+    <div class="sect">My daily summary · ${recs.length} recitations · ${passN} passed</div>
+    ${recs.length ? recs.map(recordCard).join('') : '<p class="empty">Your teacher\'s marks and comments will appear here after you recite.</p>'}
+    <div class="sescard"><h4>Join another class</h4><div class="sesjoin"><input id="joinCode" maxlength="8" placeholder="Class code"><button class="btn" id="joinGo">Join</button></div>${CLS.joinMsg ? `<p class="serr">${esc(CLS.joinMsg)}</p>` : ''}</div>
+  </div><div>${clsChatHtml(cloud.uid)}</div></div>`;
+}
+function ownSummaryHtml() {
+  const c = {}; let n = 0;
+  for (const [, st] of pages) for (const v of Object.values(st.m || {})) { c[v] = (c[v] || 0) + 1; n++; }
+  return `<div class="sect">My own marks on this device (${n})</div><div class="legend">${CATS.map(k => `<div class="lg" style="--c:var(--m-${k.id})"><span class="sw"></span><span>${k.label}</span><span class="n">${c[k.id] || 0}</span></div>`).join('')}</div>`;
+}
+function recordCard(r) {
+  const t = r.grade ? gradeTotals(r.grade) : null, ty = TYPES.find(x => x[0] === r.type);
+  return `<details class="dles"><summary><b>${esc(dayLabel(r.t))}</b> · ${esc(ty ? ty[1] : r.type || '')} · ${esc(rangeLabel(r))} ${resultPill(r.result)}${t ? ` <span class="pill grade">${t.s}/${t.m}</span>` : ''}${CLS.me.role === 'teacher' ? ` · ${esc(memberName(r.sid))}` : ''}</summary>
+    ${r.comment ? `<p class="dcom" dir="auto">${esc(r.comment)} ${trBtn(r.comment, r.lang)}</p>` : ''}
+    ${t ? `<div class="gview">${r.grade.items.map(x => `<span>${esc(x.n)} <b>${x.s}/${x.m}</b></span>`).join('')}</div>` : ''}
+    ${(r.marks || []).length ? `<div class="list">${r.marks.map(m => `<div class="item" style="--mc:var(--m-${esc(m.c)})"><span class="sw"></span><span class="ar">${esc(wordOf(m.k))}</span><span class="ref">${esc(refOf(m.k))} · ${esc(CAT[m.c]?.label || '')}${m.n ? ` · <span dir="auto">${esc(m.n)}</span> ${trBtn(m.n, r.lang)}` : ''}</span></div>`).join('')}</div>` : '<p class="empty">No mistakes marked.</p>'}</details>`;
+}
+function teacherClsHtml() {
+  if (!CLS.cls) {
+    return `<div class="sect">My classes (${CLS.classes.length})</div><div class="dgrid">${CLS.classes.map(c => {
+      const nxt = nextClassTime(c.schedule);
+      return `<div class="dcard"><div class="dtop"><div><h3>${esc(c.name)}</h3><div class="dsub">${(c.studentIds || []).length} students · code <b>${esc(c.code)}</b></div></div></div><div class="dlast">${nxt ? `Next: ${DAYS[nxt.st.getDay()]} ${nxt.x.s}` : 'No timetable'}</div><div class="dact"><button class="btn primary" data-clsopen="${c.id}">Open class</button></div></div>`;
+    }).join('')}</div>
+    <div class="sescard"><h4>Create a class</h4><div class="sesjoin"><input id="newCls" placeholder="Class name, e.g. Hifz evening group" style="text-transform:none;letter-spacing:0"><button class="btn primary" id="newClsGo">Create</button></div></div>`;
+  }
+  const c = CLS.cls, ids = c.studentIds || [], day = CLS.day || {att: {}, queue: [], done: []}, recsToday = CLS.records.filter(r => r.date === today());
+  if (CLS.view === 'student' && CLS.sid) return teacherStudentClsHtml(CLS.sid);
+  const sched = (c.schedule || []).map((x, i) => `<div class="srow"><select data-sd="${i}">${DAYS.map((d, j) => `<option value="${j}"${+x.d === j ? ' selected' : ''}>${d}</option>`).join('')}</select><input type="time" data-ss="${i}" value="${esc(x.s || '')}"><span>–</span><input type="time" data-se="${i}" value="${esc(x.e || '')}"><button class="btn icon" data-sdel="${i}">✕</button></div>`).join('');
+  return `<div class="hhead"><div><h2>${esc(c.name)}</h2><div class="sub">Join code <b class="ccode" style="font-size:16px">${esc(c.code)}</b> · ${ids.length} students</div></div><span class="grow"></span><button class="btn" id="clsBack">← All classes</button></div>
+    <div class="hsplit"><div>
+      <div class="sect">Today · ${esc(today())} · attendance and queue</div>
+      ${ids.length ? `<div class="roster">${ids.map(id => {
+        const att = (day.att || {})[id], inQ = (day.queue || []).indexOf(id), done = (day.done || []).includes(id), plan = CLS.plans[id] || {}, recs = CLS.records.filter(r => r.sid === id), last = recs[0];
+        return `<div class="rrow${day.current === id ? ' now' : ''}"><div class="rname"><button class="linkbtn" data-stuopen="${id}"><b>${esc(memberName(id))}</b></button><span class="sub">${esc(rangeLabel(plan.sabaq))}</span></div>
+          <div class="ratt">${['present', 'late', 'absent'].map(a => `<button class="chipb${att === a ? ' on ' + a : ''}" data-att="${id}" data-a="${a}">${a === 'present' ? 'Present' : a === 'late' ? 'Late' : 'Absent'}</button>`).join('')}</div>
+          <div class="rq">${done ? '<span class="pill pass">Recited</span>' : day.current === id ? '<span class="pill new">Reciting</span>' : inQ >= 0 ? `<span class="pill">#${inQ + 1}</span>` : `<button class="chipb" data-qadd="${id}">+ Queue</button>`}</div>
+          <div class="rlast">${last ? `${resultPill(last.result)} <span class="sub">${esc(dayLabel(last.t))}</span>` : '<span class="sub">no record</span>'}</div></div>`;
+      }).join('')}</div>
+      <div class="nact"><button class="btn primary" id="qNext">▶ Call next student</button><button class="btn" id="qAll">Queue everyone present</button><button class="btn" id="qReset">Clear queue</button></div>`
+      : '<p class="empty">No students yet. Give them the join code above: they sign up as a student and enter it.</p>'}
+      <div class="sect">Class summary</div>${classSummaryHtml(ids, recsToday)}
+      <div class="sect">Timetable</div><div class="sched">${sched || '<p class="empty">No learning times yet.</p>'}</div><button class="btn" id="sAdd">+ Add a learning time</button>
+    </div><div>${CLS.sid ? clsChatHtml(CLS.sid) : '<div class="chat"><p class="empty" style="padding:14px">Open a student to see their plan, records and chat.</p></div>'}</div></div>`;
+}
+function classSummaryHtml(ids, recsToday) {
+  return `<div class="sumtable"><div class="sh"><span>Student</span><span>Reciting now</span><span>Records</span><span>Passed</span><span>Top mistake</span></div>${ids.map(id => {
+    const rs = CLS.records.filter(r => r.sid === id), pass = rs.filter(r => r.result === 'pass').length, cnt = {};
+    rs.forEach(r => (r.marks || []).forEach(m => cnt[m.c] = (cnt[m.c] || 0) + 1));
+    const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+    return `<div class="sr"><span>${esc(memberName(id))}</span><span>${esc(rangeLabel((CLS.plans[id] || {}).sabaq))}</span><span>${rs.length}</span><span>${rs.length ? Math.round(pass / rs.length * 100) + '%' : '–'}</span><span>${top ? `${esc(CAT[top[0]]?.label || '')} (${top[1]})` : '–'}</span></div>`;
+  }).join('')}</div><p class="sub">${recsToday.length} recitations recorded today.</p>`;
+}
+function planEditor(id) {
+  const p = CLS.plans[id] || {};
+  return `<div class="pedit">${TYPES.map(([t, ar, en]) => `<div class="prow"><b>${ar}</b><span class="sub">${en}</span><input data-pf="${t}" value="${esc(p[t] && p[t].from || '')}" placeholder="from 2:1"><input data-pt="${t}" value="${esc(p[t] && p[t].to || '')}" placeholder="to 2:5"></div>`).join('')}
+    <label class="dfield wide"><span>Note for the student</span><textarea id="pNote" dir="auto">${esc(p.note || '')}</textarea></label>
+    <div class="nact"><button class="btn primary" id="pSave">Save today's plan</button></div></div>`;
+}
+function teacherStudentClsHtml(id) {
+  const recs = CLS.records.filter(r => r.sid === id), m = CLS.members[id] || {};
+  return `<button class="btn" id="stuBack">← ${esc(CLS.cls.name)}</button>
+    <div class="dhead"><h2>${esc(m.name || 'Student')}</h2><span class="dsub">${esc(m.place || '')}</span><span class="grow"></span><button class="btn primary" data-clslesson="${id}">Start lesson & send code</button></div>
+    <div class="hsplit"><div>
+      <div class="sect">Today's plan</div>${planEditor(id)}
+      <div class="sect">Record a recitation</div>
+      <div class="pedit"><div class="prow"><select id="recType">${TYPES.map(([t, ar, en]) => `<option value="${t}">${ar} · ${en}</option>`).join('')}</select><input id="recFrom" placeholder="from 2:1"><input id="recTo" placeholder="to 2:5"></div>
+        <div class="resbtns"><button class="btn res pass" data-rres="pass" aria-pressed="${CLS.rres === 'pass'}">✓ Passed</button><button class="btn res fail" data-rres="repeat" aria-pressed="${CLS.rres === 'repeat'}">✕ Repeat</button></div>
+        <textarea class="snote" id="recComment" dir="auto" placeholder="Comment for the student"></textarea>
+        <div class="nact"><button class="btn primary" id="recSave">Save record</button></div>
+        <p class="sub">To record mistakes word by word, use Start lesson & send code, then Finish lesson & give result.</p></div>
+      <div class="sect">Records (${recs.length})</div>${recs.length ? recs.map(recordCard).join('') : '<p class="empty">No records yet.</p>'}
+    </div><div>${clsChatHtml(id)}</div></div>`;
+}
+
+/* ---- chat per class student ---- */
+function clsChatHtml(sid) {
+  const t = CLS.me.role === 'teacher';
+  return `<div class="chat"><div class="chead">${t ? 'Chat with ' + esc(memberName(sid)) : 'Chat with your teacher'}</div><div class="cbox" id="chatBox"></div>
+    ${t ? `<div class="cquick"><button class="btn" data-ccq="invite">Ask to come online</button><button class="btn" data-ccq="lesson">Start lesson & send code</button><button class="btn" data-ccq="feedback">Send feedback</button></div>` : ''}
+    <div class="csend"><textarea id="clsChatIn" dir="auto" rows="1" placeholder="${t ? 'Write to your student…' : 'Write to your teacher…'}"></textarea><button class="btn primary" id="clsChatSend">Send</button></div></div>`;
+}
+function clsOpenChat(sid) {
+  if (CLS.chatUnsub) { try { CLS.chatUnsub(); } catch {} CLS.chatUnsub = null; }
+  if (!CLS.cid || !sid) return;
+  CLS.chatSid = sid; CLS.msgs = [];
+  let first = true;
+  CLS.chatUnsub = fbdb().collection(`classes/${CLS.cid}/chat/${sid}/msgs`).orderBy('t').limit(300).onSnapshot(qs => {
+    const before = CLS.msgs.length; CLS.msgs = qs.docs.map(d => d.data());
+    const nw = CLS.msgs[CLS.msgs.length - 1];
+    if (!first && CLS.msgs.length > before && nw && nw.from !== cloud.uid) showToast('New message: ' + String(nw.text || '').slice(0, 60), false);
+    first = false; renderClsChat();
+  }, () => {});
+}
+function renderClsChat() {
+  const box = $('#chatBox'); if (!box) return;
+  box.innerHTML = CLS.msgs.length ? CLS.msgs.map(m => {
+    const mine = m.from === cloud.uid;
+    const extra = m.kind === 'code' && m.code && !mine ? `<button class="btn primary" data-joincode="${esc(m.code)}">Join lesson ${esc(m.code)}</button>` : m.kind === 'code' && m.code ? `<div class="ccode">${esc(m.code)}</div>` : '';
+    return `<div class="cmsg ${mine ? 'me' : 'them'} k-${esc(m.kind || 'text')}"><div class="cbub" dir="auto">${m.kind === 'invite' ? '<b>Please come online</b><br>' : m.kind === 'feedback' ? '<b>Feedback</b><br>' : m.kind === 'result' ? '<b>Lesson result</b><br>' : ''}${esc(m.text)}${extra}</div><div class="ctime">${esc(fmtDate(m.t))}${!mine ? ' ' + trBtn(m.text, m.lang) : ''}</div></div>`;
+  }).join('') : '<p class="empty">No messages yet.</p>';
+  box.scrollTop = box.scrollHeight;
+}
+async function clsSend(sid, text, kind, extra) {
+  text = String(text || '').trim(); if (!text || !CLS.cid) return;
+  try { await fbdb().collection(`classes/${CLS.cid}/chat/${sid}/msgs`).add({from: cloud.uid, text: text.slice(0, 2000), kind: kind || 'text', lang: uiLang, t: Date.now(), ...(extra || {})}); }
+  catch { showToast("The message couldn't be sent.", false); }
+}
+async function clsStartLesson(sid) {
+  CLS.lessonSid = sid;
+  const code = genCode(); stopSession();
+  SES.code = code; SES.role = 'teacher'; Object.assign(SES, {student: sid, pages: new Set([cur]), finishing: false, res: null, resNote: '', saved: false, grade: null});
+  PREV = {}; const last = CLS.records.find(r => r.sid === sid); if (last) for (const m of last.marks || []) PREV[m.k] = m;
+  await sesWrite(() => sesRef().set({owner: cloud.uid, host: 'teacher', student: sid, cid: CLS.cid, created: Date.now(), page: cur, active: true}));
+  await sesWrite(() => sesRef('/people/' + cloud.uid).set({role: 'teacher', at: Date.now()}));
+  await clsSend(sid, 'Your lesson is ready. Press Join, then recite on our call.', 'code', {code});
+  const plan = CLS.plans[sid]; if (plan && plan.sabaq && plan.sabaq.from) goto(rangePage(plan.sabaq), true);
+  subscribe(); setTool('mark'); updateSesBtn(); refreshWordMarks();
+  closeDash(); tab = 'ses'; renderPanel(); $('#panel').classList.add('open');
+}
+async function clsSaveRecord(lesson, type, from, to) {
+  const sid = lesson.sid || SES.student; if (!CLS.cid || !sid) return false;
+  const plan = CLS.plans[sid] || {}, ty = type || 'sabaq', pr = plan[ty] || {};
+  const rec = {sid, date: today(), t: Date.now(), type: ty, from: from || pr.from || '', to: to || pr.to || '', result: lesson.result || null, grade: lesson.grade || null, marks: lesson.marks || [], comment: lesson.comment || '', lang: uiLang, teacherId: cloud.uid};
+  try {
+    await fbdb().collection(`classes/${CLS.cid}/records`).add(rec);
+    const dref = fbdb().doc(`classes/${CLS.cid}/days/${today()}`); const d = (await dref.get()).data() || {att: {}, queue: [], done: []};
+    if (!(d.done || []).includes(sid)) { d.done = [...(d.done || []), sid]; d.queue = (d.queue || []).filter(x => x !== sid); if (d.current === sid) d.current = null; await dref.set(d); }
+    const t = rec.grade ? gradeTotals(rec.grade) : null;
+    await clsSend(sid, `${rec.result === 'pass' ? 'Passed ✓' : 'Repeat this again'}${t ? ` · ${t.s}/${t.m} (${t.pct}%)` : ''}${rec.comment ? ' · ' + rec.comment : ''}`, 'result');
+    return true;
+  } catch { return false; }
+}
+async function dayUpdate(fn) {
+  const ref = fbdb().doc(`classes/${CLS.cid}/days/${today()}`);
+  const d = Object.assign({att: {}, queue: [], done: [], current: null}, (await ref.get()).data() || {});
+  fn(d); await ref.set(d);
+}
+async function createClass(name) {
+  name = String(name || '').trim(); if (!name) return;
+  let code = genCode();
+  for (let i = 0; i < 5; i++) { const ex = await fbdb().doc('classCodes/' + code).get(); if (!ex.exists) break; code = genCode(); }
+  const ref = fbdb().collection('classes').doc();
+  await ref.set({name: name.slice(0, 80), teacherId: cloud.uid, teacherName: CLS.me.name || '', code, schedule: [], studentIds: [], created: Date.now()});
+  await fbdb().doc('classCodes/' + code).set({cid: ref.id});
+  CLS.cid = ref.id; await clsLoad();
+}
+async function joinClass(code) {
+  code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  CLS.joinMsg = '';
+  try {
+    const c = await fbdb().doc('classCodes/' + code).get();
+    if (!c.exists) { CLS.joinMsg = 'No class has that code. Check it with your teacher.'; return renderDash(); }
+    const cid = c.data().cid, ref = fbdb().doc('classes/' + cid);
+    const cls = (await ref.get()).data() || null;
+    const ids = (cls && cls.studentIds) || [];
+    if (!ids.includes(cloud.uid)) await ref.update({studentIds: [...ids, cloud.uid]});
+    const classIds = [...new Set([...(CLS.me.classIds || []), cid])];
+    await fbdb().doc('users/' + cloud.uid).update({classIds}); CLS.me.classIds = classIds;
+    CLS.cid = cid; await clsLoad();
+  } catch { CLS.joinMsg = "Couldn't join. Check the code and your connection."; renderDash(); }
+}
+
 function wordAttrs(st, k) {
   let a = '';
   const d = dispMark(k, st);
@@ -3275,6 +3689,72 @@ if (window.MNB_ALL_FILES && 'serviceWorker' in navigator) {
     else { lsSet('offlineDone', Date.now()); ob.textContent = 'Saved for offline ✓ (update)'; }
   });
 }
+document.addEventListener('click', async e => {
+  const b = e.target.closest('.trbtn'); if (!b) return;
+  const out = b.nextElementSibling; if (!out) return;
+  out.textContent = ' …';
+  try { out.textContent = ' → ' + await translateText(b.dataset.trtext, b.dataset.trfrom, uiLang); b.hidden = true; }
+  catch { out.textContent = navigator.onLine ? ' Translation is not available right now.' : ' Translating needs the internet.'; }
+});
+$('#dBody').addEventListener('click', async e => {
+  if (!cloud.fbApp) return;
+  const b = e.target.closest('button'); if (!b) return;
+  const isT = CLS.me && CLS.me.role === 'teacher';
+  if (b.id === 'aBack') { CLS.skip = false; P2P.on = false; cloud.db = cloud.fbDb; renderDash(); return; }
+  if (CLS.skip) return;
+  if (b.id === 'aGo') doAuth();
+  else if (b.id === 'aSwitch') { CLS.authMode = CLS.authMode === 'up' ? 'in' : 'up'; CLS.authMsg = ''; renderDash(); }
+  else if (b.dataset.arole) { CLS.newRole = b.dataset.arole; document.querySelectorAll('[data-arole]').forEach(x => x.classList.toggle('on', x === b)); }
+  else if (b.id === 'aForgot') { const em = $('#aEmail').value.trim(); if (!em) { CLS.authMsg = 'Write your email first, then press Forgot password.'; return renderDash(); } try { await firebase.auth().sendPasswordResetEmail(em); CLS.authMsg = 'We sent a link to reset your password. Check your email.'; } catch (err) { CLS.authMsg = authError(err); } renderDash(); }
+  else if (b.id === 'aSkip') { CLS.skip = true; P2P.on = true; cloud.db = null; pchatStart(); renderDash(); }
+  else if (b.id === 'aOut') { await firebase.auth().signOut(); }
+  else if (b.id === 'joinGo') joinClass($('#joinCode').value);
+  else if (b.dataset.gotor) { const [s1, a1] = b.dataset.gotor.split(':').map(Number); closeDash(); goto(Q.p[s1 - 1][a1 - 1]); }
+  else if (b.id === 'newClsGo') { b.disabled = true; try { await createClass($('#newCls').value); } catch { showToast("The class couldn't be created. Check the connection.", false); } b.disabled = false; }
+  else if (b.dataset.clsopen) { CLS.view = 'home'; CLS.sid = null; clsOpenClass(b.dataset.clsopen); }
+  else if (b.id === 'clsBack') { clsUnsubAll(); CLS.cid = null; CLS.cls = null; CLS.sid = null; CLS.view = 'home'; renderDash(); }
+  else if (b.dataset.stuopen) { CLS.view = 'student'; CLS.sid = b.dataset.stuopen; CLS.rres = null; renderDash(); }
+  else if (b.id === 'stuBack') { CLS.view = 'home'; renderDash(); }
+  else if (b.dataset.att && isT) { const id = b.dataset.att, a = b.dataset.a; await dayUpdate(d => { d.att = d.att || {}; if (d.att[id] === a) delete d.att[id]; else d.att[id] = a; }); }
+  else if (b.dataset.qadd && isT) await dayUpdate(d => { if (!d.queue.includes(b.dataset.qadd) && d.current !== b.dataset.qadd) d.queue.push(b.dataset.qadd); });
+  else if (b.id === 'qNext' && isT) { let nx = null; await dayUpdate(d => { if (d.current && !d.done.includes(d.current)) d.done.push(d.current); d.current = d.queue.shift() || null; nx = d.current; }); if (nx) { clsSend(nx, "It's your turn to recite now. Please join.", 'invite'); CLS.sid = nx; renderDash(); } }
+  else if (b.id === 'qAll' && isT) await dayUpdate(d => { for (const id of CLS.cls.studentIds || []) { const a = (d.att || {})[id]; if ((a === 'present' || a === 'late') && !d.done.includes(id) && !d.queue.includes(id) && d.current !== id) d.queue.push(id); } });
+  else if (b.id === 'qReset' && isT) await dayUpdate(d => { d.queue = []; d.current = null; });
+  else if (b.id === 'sAdd' && isT) { const sc = [...(CLS.cls.schedule || []), {d: new Date().getDay(), s: '16:00', e: '17:00'}]; await fbdb().doc('classes/' + CLS.cid).update({schedule: sc}); }
+  else if (b.dataset.sdel !== undefined && isT) { const sc = (CLS.cls.schedule || []).filter((_, i) => i !== +b.dataset.sdel); await fbdb().doc('classes/' + CLS.cid).update({schedule: sc}); }
+  else if (b.id === 'pSave' && isT) {
+    const plan = {note: ($('#pNote').value || '').slice(0, 1000), lang: uiLang, updated: Date.now()}; let bad = '';
+    for (const [t] of TYPES) { const fv = document.querySelector(`[data-pf="${t}"]`).value, tv = document.querySelector(`[data-pt="${t}"]`).value; if (!fv && !tv) { plan[t] = null; continue; } const fr = parseRef(fv), to = parseRef(tv || fv); if (!fr || !to) { bad = t; break; } plan[t] = {from: fr, to}; }
+    if (bad) { showToast('Write ayahs as surah:ayah, for example 2:1 to 2:5.', false); return; }
+    try { await fbdb().doc(`classes/${CLS.cid}/plans/${CLS.sid}`).set(plan); showToast("Today's plan saved and sent to the student.", false); } catch { showToast("The plan couldn't be saved.", false); }
+  }
+  else if (b.dataset.rres) { CLS.rres = b.dataset.rres; document.querySelectorAll('[data-rres]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+  else if (b.id === 'recSave' && isT) {
+    if (!CLS.rres) { showToast('Choose Passed or Repeat first.', false); return; }
+    const fr = parseRef($('#recFrom').value), to = parseRef($('#recTo').value || $('#recFrom').value);
+    const ok = await clsSaveRecord({sid: CLS.sid, result: CLS.rres, comment: ($('#recComment').value || '').slice(0, 1000), marks: [], grade: null}, $('#recType').value, fr || '', to || '');
+    showToast(ok ? 'Recitation recorded and sent to the student.' : "The record couldn't be saved.", false); CLS.rres = null;
+  }
+  else if ((b.dataset.clslesson || b.dataset.ccq === 'lesson') && isT) clsStartLesson(b.dataset.clslesson || CLS.sid);
+  else if (b.dataset.ccq === 'invite') clsSend(CLS.sid, 'Assalamu alaikum. Please come online for your lesson now.', 'invite');
+  else if (b.dataset.ccq === 'feedback') { const t = $('#clsChatIn'); if (!t.value.trim()) { t.placeholder = 'Type the feedback first, then press Send feedback'; t.focus(); return; } await clsSend(CLS.sid, t.value, 'feedback'); t.value = ''; }
+  else if (b.id === 'clsChatSend') { const t = $('#clsChatIn'); await clsSend(isT ? CLS.sid : cloud.uid, t.value); t.value = ''; }
+});
+$('#dBody').addEventListener('keydown', e => {
+  if (!cloud.fbApp) return;
+  if (e.target.id === 'clsChatIn' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#clsChatSend').click(); }
+  if ((e.target.id === 'aPass' || e.target.id === 'aEmail') && e.key === 'Enter') { e.preventDefault(); doAuth(); }
+});
+$('#dBody').addEventListener('change', async e => {
+  if (!cloud.fbApp || CLS.skip) return;
+  const t = e.target;
+  if (t.id === 'clsPick') { if (t.value) { CLS.view = 'home'; CLS.sid = null; clsOpenClass(t.value); } else { clsUnsubAll(); CLS.cid = null; CLS.cls = null; renderDash(); } }
+  else if ((t.dataset.sd !== undefined || t.dataset.ss !== undefined || t.dataset.se !== undefined) && CLS.me.role === 'teacher') {
+    const sc = (CLS.cls.schedule || []).map(x => ({...x})); const i = +(t.dataset.sd ?? t.dataset.ss ?? t.dataset.se);
+    if (t.dataset.sd !== undefined) sc[i].d = +t.value; else if (t.dataset.ss !== undefined) sc[i].s = t.value; else sc[i].e = t.value;
+    await fbdb().doc('classes/' + CLS.cid).update({schedule: sc});
+  }
+});
 /* recite & check controls */
 $('#reciteBtn').addEventListener('click', () => { if ($('#rbar').hidden) openR(); else closeR(); });
 $('#rStart').addEventListener('click', () => startRecite(false));
