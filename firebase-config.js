@@ -1,7 +1,10 @@
-/* Mushaf Notebook: Firebase settings (optional).
-   Leave this as null and the app works with direct chat and live lessons, no accounts needed.
-   To use Firebase (messages delivered even when the other person is offline), paste your project's
-   web app settings below, like this:
-   window.MNB_FIREBASE = { apiKey: "…", authDomain: "…", projectId: "…", appId: "…" };
-   See README.md for the steps. */
-window.MNB_FIREBASE = null;
+/* Mushaf Notebook: Firebase settings. These identify the project; they are not secret.
+   Who can read and write what is decided by the security rules (firestore.rules). */
+window.MNB_FIREBASE = {
+  apiKey: "AIzaSyDf1z0_Jt_zkS4I4MHexW17-VUP0LmT9GY",
+  authDomain: "mushaf-notebook.firebaseapp.com",
+  projectId: "mushaf-notebook",
+  storageBucket: "mushaf-notebook.firebasestorage.app",
+  messagingSenderId: "447446924040",
+  appId: "1:447446924040:web:f1c59af246efd0b739cabd"
+};
