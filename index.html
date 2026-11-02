@@ -1828,6 +1828,7 @@ const UI_ROWS = [
 ["Declined","مرفوض","La diiday","Refusé","رد","Reddedildi","Ditolak","Imekataliwa"],
 ["Waiting for your teacher","بانتظار معلمك","Sugaya macallinkaaga","En attente de votre enseignant","آپ کے استاد کا انتظار","Öğretmeniniz bekleniyor","Menunggu guru Anda","Inasubiri mwalimu wako"],
 ["Choose the time you would like.","اختر الوقت الذي تريده.","Dooro waqtiga aad rabto.","Choisissez l’horaire souhaité.","اپنی پسند کا وقت چنیں۔","İstediğiniz saati seçin.","Pilih waktu yang Anda inginkan.","Chagua muda unaotaka."],
+['Firebase refused the save. Check that the latest firestore.rules are published in the Firebase console.','رفض Firebase الحفظ. تأكد من نشر أحدث قواعد firestore.rules في لوحة Firebase.','Firebase wuu diiday kaydinta. Hubi in firestore.rules-ka ugu dambeeyay lagu daabacay Firebase console.','Firebase a refusé l’enregistrement. Vérifiez que les dernières règles firestore.rules sont publiées dans la console Firebase.','Firebase نے محفوظ کرنے سے انکار کیا۔ دیکھیں کہ تازہ firestore.rules فائر بیس کنسول میں شائع ہیں۔','Firebase kaydetmeyi reddetti. En son firestore.rules kurallarının Firebase konsolunda yayınlandığını kontrol edin.','Firebase menolak penyimpanan. Pastikan firestore.rules terbaru sudah dipublikasikan di konsol Firebase.','Firebase imekataa kuhifadhi. Hakikisha firestore.rules mpya zimechapishwa kwenye Firebase console.'],
 ['Loading…','جارٍ التحميل…','Waa la soo rarayaa…','Chargement…','لوڈ ہو رہا ہے…','Yükleniyor…','Memuat…','Inapakia…'],
 ['Connect to the internet to sign in the first time.','اتصل بالإنترنت لتسجيل الدخول أول مرة.','Ku xidh internetka si aad u gasho markii ugu horreysay.','Connectez-vous à internet pour vous connecter la première fois.','پہلی بار سائن ان کرنے کے لیے انٹرنیٹ سے جڑیں۔','İlk kez giriş yapmak için internete bağlanın.','Sambungkan ke internet untuk masuk pertama kali.','Unganisha intaneti ili uingie mara ya kwanza.'],
 ["You're offline. Your Quran and notes work; your class needs internet.",'أنت غير متصل. المصحف والملاحظات تعمل؛ الفصل يحتاج إلى الإنترنت.','Internet ma haysid. Quraanka iyo qoraalladu way shaqeynayaan; fasalku wuxuu u baahan yahay internet.','Vous êtes hors ligne. Le Coran et vos notes fonctionnent ; la classe a besoin d’internet.','آپ آف لائن ہیں۔ قرآن اور نوٹس کام کرتے ہیں؛ کلاس کے لیے انٹرنیٹ چاہیے۔','Çevrimdışısınız. Kuran ve notlar çalışır; sınıf için internet gerekir.','Anda offline. Al-Quran dan catatan berfungsi; kelas perlu internet.','Huna intaneti. Quran na maelezo yanafanya kazi; darasa linahitaji intaneti.'],
@@ -2193,9 +2194,13 @@ async function onSignedIn(u) {
   CLS.user = u; cloud.uid = u.uid; cloud.col = fbdb().collection('data/users/' + u.uid); cloud.state = 'on';
   for (const p of Object.keys(dirty)) flush(+p);
   visible().forEach(loadCloudPage); refreshStatus();
-  if (CLS.pendingProfile) { CLS.me = CLS.pendingProfile; CLS.pendingProfile = null; CLS.view = 'profile'; CLS.welcome = true; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} if (CLS.pendingPrivate) { CLS.myPriv = CLS.pendingPrivate; CLS.pendingPrivate = null; try { await fbdb().doc(`users/${u.uid}/private/info`).set(CLS.myPriv); } catch {} } }
+  if (CLS.pendingProfile) { CLS.me = CLS.pendingProfile; CLS.pendingProfile = null; CLS.view = 'profile'; CLS.welcome = true; lsSet('fbProfile:' + u.uid, CLS.me); try { await fbdb().doc('users/' + u.uid).set(CLS.me); lsSet('fbProfile:' + u.uid, null); } catch (e) { console.warn('profile not stored yet', e); } if (CLS.pendingPrivate) { CLS.myPriv = CLS.pendingPrivate; CLS.pendingPrivate = null; try { await fbdb().doc(`users/${u.uid}/private/info`).set(CLS.myPriv); } catch {} } }
   else { for (let i = 0; i < 6 && !CLS.me; i++) { try { const d = await fbdb().doc('users/' + u.uid).get(); CLS.me = d.exists ? d.data() : null; } catch {} if (!CLS.me) await new Promise(r => setTimeout(r, 500)); } }
-  if (!CLS.me) { CLS.me = {role: 'student', name: u.email || 'Student', classIds: [], created: Date.now()}; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
+  if (!CLS.me) {
+    const local = lsGet('fbProfile:' + u.uid), fm = lsGet('fbMe');
+    CLS.me = local || {role: fm && fm.role === 'teacher' ? 'teacher' : 'student', name: (fm && fm.name) || u.email || 'Student', classIds: [], created: Date.now()};
+    try { await fbdb().doc('users/' + u.uid).set(CLS.me); lsSet('fbProfile:' + u.uid, null); } catch (e) { console.warn('profile not stored yet', e); }
+  }
   if (CLS.me.lang && CLS.me.lang !== uiLang && !lsGet('prefs')?.ui) setUiLang(CLS.me.lang);
   lsSet('fbMe', {role: CLS.me.role, name: CLS.me.name || ''});
   await clsLoad();
@@ -2300,7 +2305,7 @@ function profileHtml() {
       ${isT ? '' : pf('guardian', 'Parent or guardian', p.guardian) + pf('guardianPhone', "Guardian's phone", p.guardianPhone, {type: 'tel'})}
     </div>
     <p class="sub"><b>${isT ? 'Teacher' : 'Student'}</b> · <span>The role can't be changed.</span></p>
-    ${CLS.profMsg ? `<p class="sub">${esc(CLS.profMsg)}</p>` : ''}
+    ${CLS.profMsg ? `<p class="serr"><span>${esc(CLS.profMsg)}</span>${CLS.profErr ? ` <code>${esc(CLS.profErr)}</code>` : ''}</p>${CLS.profErr === 'permission-denied' ? '<p class="sub">Firebase refused the save. Check that the latest firestore.rules are published in the Firebase console.</p>' : ''}` : ''}
     <div class="nact"><button class="btn primary" id="profSave">Save profile</button><button class="btn" id="profClose">${CLS.welcome ? 'Later' : 'Back'}</button></div>
   </div>`;
 }
@@ -2313,13 +2318,14 @@ async function saveProfile2() {
   pub.lang = uiLang;
   const teachers = [...new Set([...((CLS.myPriv || {}).teachers || []), ...CLS.classes.map(c => c.teacherId).filter(t => t && t !== cloud.uid)])];
   try {
+    await ensureMe();
     await fbdb().doc('users/' + cloud.uid).update(pub);
     Object.assign(CLS.me, pub);
     CLS.myPriv = {...(CLS.myPriv || {}), ...priv, email: (CLS.user && CLS.user.email) || (CLS.myPriv || {}).email || '', teachers};
     await fbdb().doc(`users/${cloud.uid}/private/info`).set(CLS.myPriv);
     lsSet('fbMe', {role: CLS.me.role, name: CLS.me.name || ''});
-    CLS.profMsg = ''; CLS.welcome = false; CLS.view = 'home'; showToast('Profile saved', false);
-  } catch { CLS.profMsg = "Couldn't save. Check your connection and try again."; }
+    CLS.profMsg = ''; CLS.profErr = ''; CLS.welcome = false; CLS.view = 'home'; showToast('Profile saved', false);
+  } catch (e) { console.warn('profile save', e); CLS.profMsg = "Couldn't save. Check your connection and try again."; CLS.profErr = errCode(e); }
   renderDash();
 }
 async function shareProfileWith(teacherId) {
@@ -2657,8 +2663,15 @@ async function dayUpdate(fn) {
   const d = Object.assign({att: {}, queue: [], done: [], current: null}, (await ref.get()).data() || {});
   fn(d); await ref.set(d);
 }
+async function ensureMe() {
+  const ref = fbdb().doc('users/' + cloud.uid);
+  const d = await ref.get();
+  if (!d.exists) { await ref.set({...CLS.me, classIds: CLS.me.classIds || [], created: CLS.me.created || Date.now()}); lsSet('fbProfile:' + cloud.uid, null); }
+}
+const errCode = e => (e && (e.code || e.message)) ? String(e.code || e.message).replace(/^firestore\//, '') : 'unknown';
 async function createClass(name) {
   name = String(name || '').trim(); if (!name) return;
+  await ensureMe();
   let code = genCode();
   for (let i = 0; i < 5; i++) { const ex = await fbdb().doc('classCodes/' + code).get(); if (!ex.exists) break; code = genCode(); }
   const ref = fbdb().collection('classes').doc();
@@ -4132,7 +4145,7 @@ $('#dBody').addEventListener('click', async e => {
   else if (b.id === 'profClose') { CLS.view = 'home'; CLS.welcome = false; CLS.profMsg = ''; renderDash(); }
   else if (b.id === 'joinGo') joinClass($('#joinCode').value);
   else if (b.dataset.gotor) { const [s1, a1] = b.dataset.gotor.split(':').map(Number); closeDash(); goto(Q.p[s1 - 1][a1 - 1]); }
-  else if (b.id === 'newClsGo') { b.disabled = true; try { await createClass($('#newCls').value); } catch { showToast("The class couldn't be created. Check the connection.", false); } b.disabled = false; }
+  else if (b.id === 'newClsGo') { b.disabled = true; try { await createClass($('#newCls').value); } catch (err) { console.warn('create class', err); showToast("The class couldn't be created. Check the connection." + ' (' + errCode(err) + ')', false); } b.disabled = false; }
   else if (b.dataset.clsopen) { CLS.view = 'home'; CLS.sid = null; clsOpenClass(b.dataset.clsopen); }
   else if (b.id === 'clsBack') { clsUnsubAll(); CLS.cid = null; CLS.cls = null; CLS.sid = null; CLS.view = 'home'; renderDash(); }
   else if (b.dataset.stuopen) { CLS.view = 'student'; CLS.sid = b.dataset.stuopen; CLS.rres = null; CLS.progDraft = null; renderDash(); }
