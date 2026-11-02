@@ -388,7 +388,10 @@ body.ui-rtl .panel .pbody{text-align:right}
 .profpage textarea,.profpage select,.profpage input{width:100%}
 .dfield.wide{grid-column:1/-1}
 .profcard{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;background:var(--chrome);border:1px solid var(--line);border-radius:12px;padding:12px}
-.profcard div{display:grid;gap:2px}.profcard span{font-size:11px;color:var(--muted)}
+.profcard div{display:grid;gap:2px}
+.profcard .wide{grid-column:1/-1}
+.prog .slotrow select,.prog .slotrow input{width:auto}
+.prog .dprof{margin-top:8px}.profcard span{font-size:11px;color:var(--muted)}
 .profcard p,.profcard .trbtn,.profcard .trout{grid-column:1/-1}
 .auth .hcard{padding:12px;text-align:center}
 .hcard.on{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
@@ -1791,6 +1794,40 @@ const UI_ROWS = [
 ["recitations","تلاوات","akhris","récitations","تلاوتیں","okuma","bacaan","usomaji"],
 ["passed","ناجحة","gudbay","réussies","کامیاب","geçti","lulus","umefaulu"],
 ["today","اليوم","maanta","aujourd’hui","آج","bugün","hari ini","leo"],
+["Programme","البرنامج","Barnaamijka","Programme","پروگرام","Program","Program","Programu"],
+["My programme","برنامجي","Barnaamijkayga","Mon programme","میرا پروگرام","Programım","Program saya","Programu yangu"],
+["Lesson times for this student","أوقات الدروس لهذا الطالب","Waqtiyada casharka ardaygan","Horaires de cours de cet élève","اس طالب علم کے اسباق کے اوقات","Bu öğrencinin ders saatleri","Waktu pelajaran murid ini","Nyakati za masomo za mwanafunzi huyu"],
+["No times yet. The class timetable is used.","لا توجد أوقات بعد. يُستخدم جدول الفصل.","Weli waqti ma jiro. Jadwalka fasalka ayaa la isticmaalayaa.","Pas encore d’horaire. L’emploi du temps de la classe est utilisé.","ابھی کوئی وقت نہیں۔ کلاس کا نظام الاوقات استعمال ہوگا۔","Henüz saat yok. Sınıf programı kullanılıyor.","Belum ada waktu. Jadwal kelas yang dipakai.","Bado hakuna nyakati. Ratiba ya darasa inatumika."],
+["+ Add a time","+ أضف وقتاً","+ Ku dar waqti","+ Ajouter un horaire","+ وقت شامل کریں","+ Saat ekle","+ Tambah waktu","+ Ongeza muda"],
+["Use class timetable","استخدم جدول الفصل","Isticmaal jadwalka fasalka","Utiliser l’emploi du temps de la classe","کلاس کا نظام الاوقات استعمال کریں","Sınıf programını kullan","Pakai jadwal kelas","Tumia ratiba ya darasa"],
+["How","الطريقة","Sida","Comment","کیسے","Nasıl","Cara","Vipi"],
+["Online","عن بُعد","Online","En ligne","آن لائن","Çevrimiçi","Online","Mtandaoni"],
+["In person","حضورياً","Fool ka fool","En présentiel","آمنے سامنے","Yüz yüze","Tatap muka","Ana kwa ana"],
+["Online and in person","عن بُعد وحضورياً","Online iyo fool ka fool","En ligne et en présentiel","آن لائن اور آمنے سامنے","Çevrimiçi ve yüz yüze","Online dan tatap muka","Mtandaoni na ana kwa ana"],
+["Place or link","المكان أو الرابط","Goobta ama linkiga","Lieu ou lien","جگہ یا لنک","Yer veya bağlantı","Tempat atau tautan","Mahali au kiungo"],
+["Amount per lesson","المقدار في كل درس","Inta cashar kasta","Quantité par leçon","ہر سبق کی مقدار","Ders başına miktar","Jumlah per pelajaran","Kiasi kwa kila somo"],
+["To pass: at most this many mistakes","للنجاح: أقصى عدد من الأخطاء","Si loo gudbo: ugu badnaan inta khalad","Pour réussir : au plus ce nombre de fautes","پاس ہونے کے لیے: زیادہ سے زیادہ غلطیاں","Geçmek için: en fazla hata sayısı","Lulus: paling banyak kesalahan","Kufaulu: makosa yasiyozidi"],
+["To pass: minimum grade %","للنجاح: الحد الأدنى للدرجة %","Si loo gudbo: darajada ugu yar %","Pour réussir : note minimale %","پاس ہونے کے لیے: کم از کم نمبر %","Geçmek için: en düşük not %","Lulus: nilai minimal %","Kufaulu: alama ya chini %"],
+["Extra work","عمل إضافي","Shaqo dheeraad ah","Travail supplémentaire","اضافی کام","Ek çalışma","Tugas tambahan","Kazi ya ziada"],
+["Save programme","احفظ البرنامج","Kaydi barnaamijka","Enregistrer le programme","پروگرام محفوظ کریں","Programı kaydet","Simpan program","Hifadhi programu"],
+["Programme saved","تم حفظ البرنامج","Barnaamijka waa la kaydiyay","Programme enregistré","پروگرام محفوظ ہو گیا","Program kaydedildi","Program disimpan","Programu imehifadhiwa"],
+["Next lesson","الدرس القادم","Casharka xiga","Prochaine leçon","اگلا سبق","Sonraki ders","Pelajaran berikutnya","Somo lijalo"],
+["Lesson times","أوقات الدروس","Waqtiyada casharka","Horaires des cours","اسباق کے اوقات","Ders saatleri","Waktu pelajaran","Nyakati za masomo"],
+["To pass","للنجاح","Si loo gudbo","Pour réussir","پاس ہونے کے لیے","Geçmek için","Untuk lulus","Kufaulu"],
+["Your teacher hasn't set your programme yet.","لم يحدد معلمك برنامجك بعد.","Macallinkaagu weli ma dejin barnaamijkaaga.","Votre enseignant n'a pas encore fixé votre programme.","آپ کے استاد نے ابھی آپ کا پروگرام نہیں بنایا۔","Öğretmeniniz henüz programınızı belirlemedi.","Guru Anda belum menyusun program Anda.","Mwalimu wako bado hajaweka programu yako."],
+["Request a time change","اطلب تغيير الوقت","Codso beddel waqti","Demander un changement d’horaire","وقت بدلنے کی درخواست","Saat değişikliği iste","Minta ganti waktu","Omba kubadilisha muda"],
+["Add a new time","أضف وقتاً جديداً","Ku dar waqti cusub","Ajouter un nouvel horaire","نیا وقت شامل کریں","Yeni saat ekle","Tambah waktu baru","Ongeza muda mpya"],
+["Reason (optional)","السبب (اختياري)","Sababta (ikhtiyaari)","Raison (facultatif)","وجہ (اختیاری)","Sebep (isteğe bağlı)","Alasan (opsional)","Sababu (si lazima)"],
+["Send to my teacher","أرسل إلى معلمي","U dir macallinkayga","Envoyer à mon enseignant","میرے استاد کو بھیجیں","Öğretmenime gönder","Kirim ke guru saya","Tuma kwa mwalimu wangu"],
+["Request sent to your teacher","أُرسل الطلب إلى معلمك","Codsiga waxaa loo diray macallinkaaga","Demande envoyée à votre enseignant","درخواست آپ کے استاد کو بھیج دی گئی","İstek öğretmeninize gönderildi","Permintaan dikirim ke guru Anda","Ombi limetumwa kwa mwalimu wako"],
+["Time change request","طلب تغيير الوقت","Codsi beddel waqti","Demande de changement d’horaire","وقت بدلنے کی درخواست","Saat değişikliği isteği","Permintaan ganti waktu","Ombi la kubadilisha muda"],
+["Lesson time","وقت الدرس","Waqtiga casharka","Heure du cours","سبق کا وقت","Ders saati","Waktu pelajaran","Muda wa somo"],
+["Accept","قبول","Aqbal","Accepter","قبول کریں","Kabul et","Terima","Kubali"],
+["Decline","رفض","Diid","Refuser","رد کریں","Reddet","Tolak","Kataa"],
+["Accepted","مقبول","La aqbalay","Accepté","قبول","Kabul edildi","Diterima","Imekubaliwa"],
+["Declined","مرفوض","La diiday","Refusé","رد","Reddedildi","Ditolak","Imekataliwa"],
+["Waiting for your teacher","بانتظار معلمك","Sugaya macallinkaaga","En attente de votre enseignant","آپ کے استاد کا انتظار","Öğretmeniniz bekleniyor","Menunggu guru Anda","Inasubiri mwalimu wako"],
+["Choose the time you would like.","اختر الوقت الذي تريده.","Dooro waqtiga aad rabto.","Choisissez l’horaire souhaité.","اپنی پسند کا وقت چنیں۔","İstediğiniz saati seçin.","Pilih waktu yang Anda inginkan.","Chagua muda unaotaka."],
 ['Loading…','جارٍ التحميل…','Waa la soo rarayaa…','Chargement…','لوڈ ہو رہا ہے…','Yükleniyor…','Memuat…','Inapakia…'],
 ['Connect to the internet to sign in the first time.','اتصل بالإنترنت لتسجيل الدخول أول مرة.','Ku xidh internetka si aad u gasho markii ugu horreysay.','Connectez-vous à internet pour vous connecter la première fois.','پہلی بار سائن ان کرنے کے لیے انٹرنیٹ سے جڑیں۔','İlk kez giriş yapmak için internete bağlanın.','Sambungkan ke internet untuk masuk pertama kali.','Unganisha intaneti ili uingie mara ya kwanza.'],
 ["You're offline. Your Quran and notes work; your class needs internet.",'أنت غير متصل. المصحف والملاحظات تعمل؛ الفصل يحتاج إلى الإنترنت.','Internet ma haysid. Quraanka iyo qoraalladu way shaqeynayaan; fasalku wuxuu u baahan yahay internet.','Vous êtes hors ligne. Le Coran et vos notes fonctionnent ; la classe a besoin d’internet.','آپ آف لائن ہیں۔ قرآن اور نوٹس کام کرتے ہیں؛ کلاس کے لیے انٹرنیٹ چاہیے۔','Çevrimdışısınız. Kuran ve notlar çalışır; sınıf için internet gerekir.','Anda offline. Al-Quran dan catatan berfungsi; kelas perlu internet.','Huna intaneti. Quran na maelezo yanafanya kazi; darasa linahitaji intaneti.'],
@@ -1865,6 +1902,9 @@ const UI_ROWS = [
 ["Open class","فتح الفصل","Fur fasalka","Ouvrir la classe","کلاس کھولیں","Sınıfı aç","Buka kelas","Fungua darasa"],
 ];
 const UI_PATTERNS = [
+  [/^at most (\d+) mistakes$/, ['أقصى حد $1 أخطاء','ugu badnaan $1 khalad','au plus $1 fautes','زیادہ سے زیادہ $1 غلطیاں','en fazla $1 hata','paling banyak $1 kesalahan','makosa yasiyozidi $1']],
+  [/^at least (\d+)%$/, ['على الأقل $1%','ugu yaraan $1%','au moins $1 %','کم از کم $1%','en az %$1','minimal $1%','angalau $1%']],
+  [/^To pass: (.+)$/, ['للنجاح: $1','Si loo gudbo: $1','Pour réussir : $1','پاس ہونے کے لیے: $1','Geçmek için: $1','Untuk lulus: $1','Kufaulu: $1']],
   [/^My daily summary · (\d+) recitations · (\d+) passed$/, ['ملخصي اليومي · $1 تلاوات · $2 ناجحة','Soo koobiddayda maalinlaha · $1 akhris · $2 gudbay','Mon résumé du jour · $1 récitations · $2 réussies','میرا روزانہ خلاصہ · $1 تلاوتیں · $2 کامیاب','Günlük özetim · $1 okuma · $2 geçti','Ringkasan harian saya · $1 bacaan · $2 lulus','Muhtasari wangu wa kila siku · usomaji $1 · $2 umefaulu']],
   [/^Records \((\d+)\)$/, ['السجلات ($1)','Diiwaanno ($1)','Enregistrements ($1)','ریکارڈ ($1)','Kayıtlar ($1)','Catatan ($1)','Rekodi ($1)']],
   [/^My classes \((\d+)\)$/, ['فصولي ($1)','Fasalladayda ($1)','Mes classes ($1)','میری کلاسیں ($1)','Sınıflarım ($1)','Kelas saya ($1)','Madarasa yangu ($1)']],
@@ -2067,13 +2107,14 @@ async function initFirebase(cfg) {
    classes/{cid}/plans/{sid}       {sabaq:{from,to}, sabqi:{from,to}, murajaah:{from,to}, note, lang, updated}
    classes/{cid}/days/{YYYY-MM-DD} {att:{sid:'present'|'late'|'absent'}, queue:[sid], current:sid|null, done:[sid]}
    classes/{cid}/records/{id}      {sid, date, t, type, from, to, result, grade, marks:[{k,c,n}], comment, lang, teacherId}
-   classes/{cid}/chat/{sid}/msgs   chat between the class teacher and one student */
+   classes/{cid}/chat/{sid}/msgs   chat between the class teacher and one student
+   classes/{cid}/programs/{sid}    {slots:[{d,s,e}], mode:'online'|'physical'|'both', where, amount, passMax, passPct, extra, lang, updated} */
 const CLS = { user: null, me: null, classes: [], cid: null, cls: null, members: {}, plans: {}, day: null, records: [], view: 'home', sid: null, unsub: [], chatUnsub: null, msgs: [], authMode: 'in', authMsg: '', busy: false };
 const TYPES = [['sabaq', 'Sabaq', 'New lesson'], ['sabqi', 'Sabqi', 'Recent revision'], ['murajaah', 'Murajaah', 'Old revision']];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const fbdb = () => cloud.db;
-function clsUnsubAll() { CLS.unsub.forEach(u => { try { u(); } catch {} }); CLS.unsub = []; if (CLS.chatUnsub) { try { CLS.chatUnsub(); } catch {} CLS.chatUnsub = null; } }
+function clsUnsubAll() { CLS.unsub.forEach(u => { try { u(); } catch {} }); CLS.unsub = []; if (CLS.chatUnsub) { try { CLS.chatUnsub(); } catch {} CLS.chatUnsub = null; } CLS.chatSid = null; CLS.msgs = []; }
 function parseRef(t) { const m = String(t || '').trim().match(/^(\d{1,3})\s*[:.]\s*(\d{1,3})$/); if (!m) return null; const s = +m[1], a = +m[2]; return Q.a[s - 1] && Q.a[s - 1][a - 1] !== undefined ? `${s}:${a}` : null; }
 function rangeLabel(r) { if (!r || !r.from) return '—'; const [s1, a1] = r.from.split(':').map(Number), [s2, a2] = (r.to || r.from).split(':').map(Number); return s1 === s2 ? `${Q.s[s1 - 1][1]} ${s1}:${a1}–${a2}` : `${Q.s[s1 - 1][1]} ${s1}:${a1} – ${Q.s[s2 - 1][1]} ${s2}:${a2}`; }
 function rangePage(r) { if (!r || !r.from) return null; const [s, a] = r.from.split(':').map(Number); return Q.p[s - 1][a - 1]; }
@@ -2173,7 +2214,7 @@ async function clsLoad() {
   if (CLS.cid) await clsOpenClass(CLS.cid); else if (!$('#dash').hidden) renderDash();
 }
 async function clsOpenClass(cid) {
-  clsUnsubAll(); CLS.cid = cid; CLS.cls = CLS.classes.find(c => c.id === cid) || null; CLS.members = {}; CLS.plans = {}; CLS.records = []; CLS.day = null;
+  clsUnsubAll(); CLS.cid = cid; CLS.cls = CLS.classes.find(c => c.id === cid) || null; CLS.members = {}; CLS.plans = {}; CLS.progs = {}; CLS.progDraft = null; CLS.records = []; CLS.day = null;
   if (!CLS.cls) return renderDash();
   const db = fbdb(), base = 'classes/' + cid, isT = CLS.me.role === 'teacher';
   CLS.unsub.push(db.doc(base).onSnapshot(s => { if (s.exists) { CLS.cls = {id: cid, ...s.data()}; loadMembers(); } }, () => {}));
@@ -2184,9 +2225,11 @@ async function clsOpenClass(cid) {
   }, () => {}));
   if (isT) {
     CLS.unsub.push(db.collection(`${base}/plans`).onSnapshot(qs => { CLS.plans = {}; qs.docs.forEach(d => CLS.plans[d.id] = d.data()); renderDashSoft(); }, () => {}));
+    CLS.unsub.push(db.collection(`${base}/programs`).onSnapshot(qs => { CLS.progs = {}; qs.docs.forEach(d => CLS.progs[d.id] = d.data()); renderDashSoft(); }, () => {}));
     CLS.unsub.push(db.collection(`${base}/records`).orderBy('t', 'desc').limit(300).onSnapshot(qs => { CLS.records = qs.docs.map(d => ({id: d.id, ...d.data()})); renderDashSoft(); }, () => {}));
   } else {
     CLS.unsub.push(db.doc(`${base}/plans/${cloud.uid}`).onSnapshot(s => { CLS.plans = {[cloud.uid]: s.exists ? s.data() : {}}; renderDashSoft(); }, () => {}));
+    CLS.unsub.push(db.doc(`${base}/programs/${cloud.uid}`).onSnapshot(s => { CLS.progs = {[cloud.uid]: s.exists ? s.data() : {}}; renderDashSoft(); }, () => {}));
     CLS.unsub.push(db.collection(`${base}/records`).where('sid', '==', cloud.uid).onSnapshot(qs => { CLS.records = qs.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => b.t - a.t); renderDashSoft(); }, () => {}));
   }
   await loadMembers(); renderDash();
@@ -2319,8 +2362,7 @@ function studentClsHtml() {
     ${plan.note ? `<div class="pnote"><b>Teacher's note:</b> <span dir="auto">${esc(plan.note)}</span> ${trBtn(plan.note, plan.lang)}</div>` : ''}
     <div class="qbox ${cur === cloud.uid ? 'now' : ''}">${cur === cloud.uid ? '<b>It\'s your turn to recite now.</b>' : pos >= 0 ? `<b>You are number ${pos + 1} in the queue.</b> ${cur ? `Now reciting: ${esc(memberName(cur))}.` : ''} ${pos > 0 && q[pos - 1] ? '' : ''}` : (day.done || []).includes(cloud.uid) ? '<b>You have recited today.</b>' : 'You are not in today\'s queue yet.'}
       ${att ? ` <span class="pill ${att === 'absent' ? 'fail' : 'pass'}">${att === 'present' ? 'Present' : att === 'late' ? 'Late' : 'Absent'}</span>` : ''}</div>
-    <div class="qbox"><b>Learning time:</b> ${nxt ? `${DAYS[nxt.st.getDay()]} ${nxt.x.s}–${nxt.x.e} (${dayLabel(nxt.st)})` : 'Your teacher hasn\'t set a timetable yet.'}
-      ${(CLS.cls.schedule || []).length ? `<div class="sub">${CLS.cls.schedule.map(x => `${DAYS[x.d]} ${x.s}–${x.e}`).join(' · ')}</div>` : ''}</div>
+    ${myProgHtml()}
     <div class="sect">My daily summary · ${recs.length} recitations · ${passN} passed</div>
     ${recs.length ? recs.map(recordCard).join('') : '<p class="empty">Your teacher\'s marks and comments will appear here after you recite.</p>'}
     <div class="sescard"><h4>Join another class</h4>${joinBox(false)}</div>
@@ -2438,6 +2480,89 @@ function classSummaryHtml(ids, recsToday) {
     return `<div class="sr"><span>${esc(memberName(id))}</span><span>${esc(rangeLabel((CLS.plans[id] || {}).sabaq))}</span><span>${rs.length}</span><span>${rs.length ? Math.round(pass / rs.length * 100) + '%' : '–'}</span><span>${top ? `${esc(CAT[top[0]]?.label || '')} (${top[1]})` : '–'}</span></div>`;
   }).join('')}</div><p class="sub">${recsToday.length} recitations recorded today.</p>`;
 }
+/* ---- programme for one student ---- */
+const MODES = [['online', 'Online'], ['physical', 'In person'], ['both', 'Online and in person']];
+const slotLabel = x => `${DAYS[+x.d]} ${x.s}–${x.e}`;
+function progOf(id) { return (CLS.progs || {})[id] || {}; }
+function readProgSlots() {
+  return [...document.querySelectorAll('.slotrow')].map(r => ({d: +r.querySelector('[data-sd]').value, s: r.querySelector('[data-ss]').value || '00:00', e: r.querySelector('[data-se]').value || r.querySelector('[data-ss]').value || '00:00'}));
+}
+function progEditor(id) {
+  const p = progOf(id);
+  if (!CLS.progDraft || CLS.progDraft.id !== id) CLS.progDraft = {id, slots: (p.slots || []).map(x => ({...x}))};
+  const slots = CLS.progDraft.slots;
+  return `<div class="pedit prog">
+    <div class="sub">Lesson times for this student</div>
+    ${slots.length ? slots.map((x, i) => `<div class="prow slotrow"><select data-sd>${DAYS.map((d, j) => `<option value="${j}"${+x.d === j ? ' selected' : ''}>${d}</option>`).join('')}</select><input type="time" data-ss value="${esc(x.s || '')}"><input type="time" data-se value="${esc(x.e || '')}"><button class="btn icon" data-slotdel="${i}" aria-label="Remove time">✕</button></div>`).join('') : '<p class="empty">No times yet. The class timetable is used.</p>'}
+    <div class="nact" style="justify-content:flex-start"><button class="btn" id="slotAdd">+ Add a time</button>${(CLS.cls.schedule || []).length ? '<button class="btn" id="slotCls">Use class timetable</button>' : ''}</div>
+    <div class="dprof">
+      <label class="dfield"><span>How</span><select id="pgMode">${MODES.map(([v, l]) => `<option value="${v}"${(p.mode || 'physical') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="dfield"><span>Place or link</span><input id="pgWhere" dir="auto" value="${esc(p.where || '')}" placeholder="Mosque address, or Zoom / WhatsApp link"></label>
+      <label class="dfield"><span>Amount per lesson</span><input id="pgAmount" dir="auto" value="${esc(p.amount || '')}" placeholder="1 page, half a page, 10 ayahs…"></label>
+      <label class="dfield"><span>To pass: at most this many mistakes</span><input id="pgMax" type="number" min="0" value="${esc(p.passMax ?? '')}" placeholder="3"></label>
+      <label class="dfield"><span>To pass: minimum grade %</span><input id="pgPct" type="number" min="0" max="100" value="${esc(p.passPct ?? '')}" placeholder="80"></label>
+      <label class="dfield wide"><span>Extra work</span><textarea id="pgExtra" dir="auto" rows="3" placeholder="Listen to the surah 5 times, write the hard words, revise Juz 30…">${esc(p.extra || '')}</textarea></label>
+    </div>
+    <div class="nact"><button class="btn primary" id="pgSave">Save programme</button></div></div>`;
+}
+async function saveProg(id) {
+  const slots = readProgSlots();
+  const num = (v, max) => v === '' ? null : Math.max(0, Math.min(max, Math.round(+v || 0)));
+  const prog = {slots, mode: $('#pgMode').value, where: $('#pgWhere').value.trim().slice(0, 300), amount: $('#pgAmount').value.trim().slice(0, 120),
+    passMax: num($('#pgMax').value, 999), passPct: num($('#pgPct').value, 100), extra: $('#pgExtra').value.trim().slice(0, 2000), lang: uiLang, updated: Date.now()};
+  try { await fbdb().doc(`classes/${CLS.cid}/programs/${id}`).set(prog); CLS.progs[id] = prog; CLS.progDraft = null; showToast('Programme saved', false); }
+  catch { showToast("Couldn't save. Check your connection.", false); }
+  renderDash();
+}
+function passRule(p) {
+  const a = [];
+  if (p.passMax !== null && p.passMax !== undefined && p.passMax !== '') a.push(`at most ${p.passMax} mistakes`);
+  if (p.passPct) a.push(`at least ${p.passPct}%`);
+  return a.join(' · ');
+}
+function whereHtml(w) { return /^https?:\/\//i.test(w || '') ? `<a href="${esc(w)}" target="_blank" rel="noopener">${esc(w)}</a>` : esc(w || ''); }
+function myProgHtml() {
+  const p = progOf(cloud.uid), slots = (p.slots && p.slots.length ? p.slots : CLS.cls.schedule) || [];
+  const nxt = nextClassTime(slots), mode = MODES.find(m => m[0] === p.mode);
+  const row = (k, v) => v ? `<div><span>${k}</span><b dir="auto">${v}</b></div>` : '';
+  return `<div class="sect">My programme</div><div class="profcard">
+      ${row('Next lesson', nxt ? esc(`${DAYS[nxt.st.getDay()]} ${nxt.x.s}–${nxt.x.e} (${dayLabel(nxt.st)})`) : '')}
+      ${row('Lesson times', esc(slots.map(slotLabel).join(' · ')))}
+      ${row('How', mode ? esc(mode[1]) : '')}${row('Place or link', whereHtml(p.where))}
+      ${row('Amount per lesson', esc(p.amount || ''))}${row('To pass', esc(passRule(p)))}
+      ${p.extra ? `<div class="wide"><span>Extra work</span><b dir="auto">${esc(p.extra)}</b> ${trBtn(p.extra, p.lang)}</div>` : ''}
+      ${!slots.length && !p.amount && !p.extra ? '<p class="empty">Your teacher hasn\'t set your programme yet.</p>' : ''}
+    </div>
+    ${CLS.reqOpen ? `<div class="pedit"><div class="sub">Request a time change</div>
+      <div class="prow"><select id="rqWhich">${slots.map((x, i) => `<option value="${i}">Instead of ${esc(slotLabel(x))}</option>`).join('')}<option value="-1">Add a new time</option></select></div>
+      <div class="prow"><select id="rqDay">${DAYS.map((d, j) => `<option value="${j}">${d}</option>`).join('')}</select><input type="time" id="rqS"><input type="time" id="rqE"></div>
+      <textarea class="snote" id="rqWhy" dir="auto" placeholder="Reason (optional)"></textarea>
+      <div class="nact"><button class="btn primary" id="rqSend">Send to my teacher</button><button class="btn" id="rqCancel">Cancel</button></div></div>`
+      : '<div class="nact" style="justify-content:flex-start"><button class="btn" id="rqOpen">Request a time change</button></div>'}`;
+}
+async function sendTimeReq() {
+  const which = +$('#rqWhich').value, d = +$('#rqDay').value, st = $('#rqS').value, en = $('#rqE').value || st, why = $('#rqWhy').value.trim();
+  if (!st) { showToast('Choose the time you would like.', false); return; }
+  const p = progOf(cloud.uid), slots = (p.slots && p.slots.length ? p.slots : CLS.cls.schedule) || [];
+  const want = {d, s: st, e: en};
+  const text = (which >= 0 && slots[which] ? `Can my lesson on ${slotLabel(slots[which])} move to ${slotLabel(want)}?` : `Can I have an extra lesson on ${slotLabel(want)}?`) + (why ? ' ' + why : '');
+  await clsSend(cloud.uid, text, 'timereq', {req: {...want, replace: which >= 0 && slots[which] ? slots[which] : null}});
+  CLS.reqOpen = false; renderDash(); showToast('Request sent to your teacher', false);
+}
+async function answerTimeReq(m, ok) {
+  const sid = CLS.chatSid; if (!sid || !m || !m.req) return;
+  if (ok) {
+    const p = progOf(sid), r = m.req;
+    let slots = (p.slots && p.slots.length ? p.slots : (CLS.cls.schedule || [])).map(x => ({d: +x.d, s: x.s, e: x.e}));
+    const i = r.replace ? slots.findIndex(x => +x.d === +r.replace.d && x.s === r.replace.s && x.e === r.replace.e) : -1;
+    const nw = {d: +r.d, s: r.s, e: r.e};
+    if (i >= 0) slots[i] = nw; else slots.push(nw);
+    const prog = {...p, slots, updated: Date.now()};
+    try { await fbdb().doc(`classes/${CLS.cid}/programs/${sid}`).set(prog); CLS.progs[sid] = prog; CLS.progDraft = null; } catch { showToast("Couldn't save. Check your connection.", false); return; }
+    await clsSend(sid, `Accepted. Your new time: ${slotLabel(nw)}.`, 'timeans', {reqT: m.t, ok: true});
+  } else await clsSend(sid, `Sorry, I can't change the time to ${slotLabel(m.req)}.`, 'timeans', {reqT: m.t, ok: false});
+  renderDash();
+}
 function planEditor(id) {
   const p = CLS.plans[id] || {};
   return `<div class="pedit">${TYPES.map(([t, ar, en]) => `<div class="prow"><b>${ar}</b><span class="sub">${en}</span><input data-pf="${t}" value="${esc(p[t] && p[t].from || '')}" placeholder="from 2:1"><input data-pt="${t}" value="${esc(p[t] && p[t].to || '')}" placeholder="to 2:5"></div>`).join('')}
@@ -2450,8 +2575,9 @@ function teacherStudentClsHtml(id) {
     <div class="dhead"><h2>${esc(m.name || 'Student')}</h2><span class="dsub">${esc(m.place || '')}</span><span class="grow"></span><button class="btn primary" data-clslesson="${id}">Start lesson & send code</button></div>
     <div class="hsplit"><div>
       ${studentProfileCard(id)}
+      <div class="sect">Programme</div>${progEditor(id)}
       <div class="sect">Today's plan</div>${planEditor(id)}
-      <div class="sect">Record a recitation</div>
+      <div class="sect">Record a recitation</div>${passRule(progOf(id)) ? `<p class="sub">To pass: ${esc(passRule(progOf(id)))}</p>` : ''}
       <div class="pedit"><div class="prow"><select id="recType">${TYPES.map(([t, ar, en]) => `<option value="${t}">${ar} · ${en}</option>`).join('')}</select><input id="recFrom" placeholder="from 2:1"><input id="recTo" placeholder="to 2:5"></div>
         <div class="resbtns"><button class="btn res pass" data-rres="pass" aria-pressed="${CLS.rres === 'pass'}">✓ Passed</button><button class="btn res fail" data-rres="repeat" aria-pressed="${CLS.rres === 'repeat'}">✕ Repeat</button></div>
         <textarea class="snote" id="recComment" dir="auto" placeholder="Comment for the student"></textarea>
@@ -2485,7 +2611,14 @@ function renderClsChat() {
   box.innerHTML = CLS.msgs.length ? CLS.msgs.map(m => {
     const mine = m.from === cloud.uid;
     const extra = m.kind === 'code' && m.code && !mine ? `<button class="btn primary" data-joincode="${esc(m.code)}">Join lesson ${esc(m.code)}</button>` : m.kind === 'code' && m.code ? `<div class="ccode">${esc(m.code)}</div>` : '';
-    return `<div class="cmsg ${mine ? 'me' : 'them'} k-${esc(m.kind || 'text')}"><div class="cbub" dir="auto">${m.kind === 'invite' ? '<b>Please come online</b><br>' : m.kind === 'feedback' ? '<b>Feedback</b><br>' : m.kind === 'result' ? '<b>Lesson result</b><br>' : ''}${esc(m.text)}${extra}</div><div class="ctime">${esc(fmtDate(m.t))}${!mine ? ' ' + trBtn(m.text, m.lang) : ''}</div></div>`;
+    let req = '';
+    if (m.kind === 'timereq') {
+      const ans = CLS.msgs.find(x => x.kind === 'timeans' && x.reqT === m.t);
+      req = ans ? `<div><span class="pill ${ans.ok ? 'pass' : 'fail'}">${ans.ok ? 'Accepted' : 'Declined'}</span></div>`
+        : CLS.me.role === 'teacher' ? `<div class="nact" style="justify-content:flex-start"><button class="btn primary" data-reqok="${m.t}">Accept</button><button class="btn" data-reqno="${m.t}">Decline</button></div>`
+        : '<div><span class="pill">Waiting for your teacher</span></div>';
+    }
+    return `<div class="cmsg ${mine ? 'me' : 'them'} k-${esc(m.kind || 'text')}"><div class="cbub" dir="auto">${m.kind === 'invite' ? '<b>Please come online</b><br>' : m.kind === 'feedback' ? '<b>Feedback</b><br>' : m.kind === 'result' ? '<b>Lesson result</b><br>' : m.kind === 'timereq' ? '<b>Time change request</b><br>' : m.kind === 'timeans' ? '<b>Lesson time</b><br>' : ''}${esc(m.text)}${extra}${req}</div><div class="ctime">${esc(fmtDate(m.t))}${!mine ? ' ' + trBtn(m.text, m.lang) : ''}</div></div>`;
   }).join('') : '<p class="empty">No messages yet.</p>';
   box.scrollTop = box.scrollHeight;
 }
@@ -3986,6 +4119,14 @@ $('#dBody').addEventListener('click', async e => {
   else if (b.dataset.sres) { CLS.sres = b.dataset.sres; document.querySelectorAll('[data-sres]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
   else if (b.id === 'soloSave') { b.disabled = true; await saveSelfLog(); }
   else if (b.id === 'leaveCls') { if (CLS.cid && confirm('Leave this class? Your teacher will no longer see you in it.')) leaveClass(CLS.cid); }
+  else if (b.id === 'slotAdd' && isT) { CLS.progDraft.slots = readProgSlots(); const last = CLS.progDraft.slots[CLS.progDraft.slots.length - 1]; CLS.progDraft.slots.push(last ? {...last, d: (last.d + 1) % 7} : {d: 6, s: '16:00', e: '17:00'}); renderDash(); }
+  else if (b.dataset.slotdel !== undefined && isT) { CLS.progDraft.slots = readProgSlots(); CLS.progDraft.slots.splice(+b.dataset.slotdel, 1); renderDash(); }
+  else if (b.id === 'slotCls' && isT) { CLS.progDraft.slots = (CLS.cls.schedule || []).map(x => ({d: +x.d, s: x.s, e: x.e})); renderDash(); }
+  else if (b.id === 'pgSave' && isT) { b.disabled = true; await saveProg(CLS.sid); }
+  else if (b.id === 'rqOpen') { CLS.reqOpen = true; renderDash(); }
+  else if (b.id === 'rqCancel') { CLS.reqOpen = false; renderDash(); }
+  else if (b.id === 'rqSend') { b.disabled = true; await sendTimeReq(); }
+  else if (b.dataset.reqok || b.dataset.reqno) { if (!isT) return; const t = +(b.dataset.reqok || b.dataset.reqno); b.disabled = true; await answerTimeReq(CLS.msgs.find(x => x.t === t && x.kind === 'timereq'), !!b.dataset.reqok); }
   else if (b.id === 'profOpen') { CLS.view = CLS.view === 'profile' ? 'home' : 'profile'; CLS.profMsg = ''; renderDash(); }
   else if (b.id === 'profSave') { b.disabled = true; await saveProfile2(); }
   else if (b.id === 'profClose') { CLS.view = 'home'; CLS.welcome = false; CLS.profMsg = ''; renderDash(); }
@@ -3994,7 +4135,7 @@ $('#dBody').addEventListener('click', async e => {
   else if (b.id === 'newClsGo') { b.disabled = true; try { await createClass($('#newCls').value); } catch { showToast("The class couldn't be created. Check the connection.", false); } b.disabled = false; }
   else if (b.dataset.clsopen) { CLS.view = 'home'; CLS.sid = null; clsOpenClass(b.dataset.clsopen); }
   else if (b.id === 'clsBack') { clsUnsubAll(); CLS.cid = null; CLS.cls = null; CLS.sid = null; CLS.view = 'home'; renderDash(); }
-  else if (b.dataset.stuopen) { CLS.view = 'student'; CLS.sid = b.dataset.stuopen; CLS.rres = null; renderDash(); }
+  else if (b.dataset.stuopen) { CLS.view = 'student'; CLS.sid = b.dataset.stuopen; CLS.rres = null; CLS.progDraft = null; renderDash(); }
   else if (b.id === 'stuBack') { CLS.view = 'home'; renderDash(); }
   else if (b.dataset.att && isT) { const id = b.dataset.att, a = b.dataset.a; await dayUpdate(d => { d.att = d.att || {}; if (d.att[id] === a) delete d.att[id]; else d.att[id] = a; }); }
   else if (b.dataset.qadd && isT) await dayUpdate(d => { if (!d.queue.includes(b.dataset.qadd) && d.current !== b.dataset.qadd) d.queue.push(b.dataset.qadd); });

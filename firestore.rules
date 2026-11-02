@@ -47,6 +47,8 @@ service cloud.firestore {
 
       // Today's plan: the teacher writes it, the student reads their own.
       match /plans/{sid} { allow read: if isTeacherOf(cid) || me() == sid; allow write: if isTeacherOf(cid); }
+      // Each student's programme (times, place, pass rule, extra work): the teacher writes it, the student reads their own.
+      match /programs/{sid} { allow read: if isTeacherOf(cid) || me() == sid; allow write: if isTeacherOf(cid); }
       // Attendance and queue: the class reads it, the teacher writes it.
       match /days/{date} { allow read: if isTeacherOf(cid) || inClass(cid); allow write: if isTeacherOf(cid); }
       // Recitation records: the teacher writes them, each student reads their own.
