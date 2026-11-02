@@ -15,6 +15,11 @@ service cloud.firestore {
       allow create: if signedIn() && me() == uid && request.resource.data.role in ['student', 'teacher'];
       // the role chosen at sign-up can never be changed
       allow update: if signedIn() && me() == uid && request.resource.data.role == resource.data.role;
+      // Phone, date of birth, guardian, email: only the person and the teachers they joined.
+      match /private/{doc} {
+        allow read: if signedIn() && (me() == uid || me() in resource.data.teachers);
+        allow write: if signedIn() && me() == uid;
+      }
     }
     // Each person's own notebook pages.
     match /data/users/{uid}/{rest=**} { allow read, write: if signedIn() && me() == uid; }
@@ -32,7 +37,12 @@ service cloud.firestore {
         || (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds'])
             && request.resource.data.studentIds.hasAll(resource.data.studentIds)
             && request.resource.data.studentIds.size() == resource.data.studentIds.size() + 1
-            && me() in request.resource.data.studentIds);
+            && me() in request.resource.data.studentIds)
+        // a student may also leave: remove only themself
+        || (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds'])
+            && resource.data.studentIds.hasAll(request.resource.data.studentIds)
+            && request.resource.data.studentIds.size() == resource.data.studentIds.size() - 1
+            && me() in resource.data.studentIds && !(me() in request.resource.data.studentIds));
       allow delete: if isTeacherOf(cid);
 
       // Today's plan: the teacher writes it, the student reads their own.

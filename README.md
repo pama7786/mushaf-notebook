@@ -48,6 +48,9 @@ With Firebase switched on, everyone signs up with an email and password as a **s
 
 - **Teachers** create classes, each with a join code and a timetable. For every class they see all students, take **attendance**, run the **recitation queue** (Call next student), set each student's **Sabaq, Sabqi and Murajaah** for today, record each recitation as **Passed or Repeat** with grade, mistakes and comment, and see a **class summary**: where each student is reciting, their pass rate and their most common mistake.
 - **Students** join a class with the code and see today's Sabaq, Sabqi and Murajaah, their **place in the queue** (with a message when it's their turn), the **learning times**, and their **daily summary** of what the teacher marked and commented. Students who join no class learn on their own.
+- **Students choose how to learn** when they sign up: **in a class** (with the teacher's code) or **on their own**. Learning on your own means setting your own daily Sabaq, Sabqi and Murajaah and logging how each recitation went. A student can join a class later, or leave one, at any time.
+- **Everyone has a profile** (My profile): name, place, country, languages, about me; students add their level, what they have memorized and their goal; teachers add their ijazah, the qiraat they teach and years teaching. Phone, date of birth, email and guardian details are private: only the person and the teachers of the classes they joined can see them.
+- The **app language** is chosen on the sign-up form and can be changed in the profile at any time.
 - Every teacher comment, note and chat message has a **Translate** button that translates it into the reader's chosen language. This is machine translation by MyMemory, and its quality varies, especially for Somali and Swahili.
 
 **Switching it on (about 10 minutes):**

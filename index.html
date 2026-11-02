@@ -382,6 +382,14 @@ body.ui-rtl .panel .pbody{text-align:right}
 .appid .btn{height:28px}
 .auth{max-width:420px;margin:30px auto;display:grid;gap:10px}
 .auth h2{margin:0}
+.profpage{max-width:860px;margin:0 auto}
+.hcard .sesjoin{margin-top:10px}
+.auth .hcard span{display:block;font-size:11px;color:var(--muted)}
+.profpage textarea,.profpage select,.profpage input{width:100%}
+.dfield.wide{grid-column:1/-1}
+.profcard{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;background:var(--chrome);border:1px solid var(--line);border-radius:12px;padding:12px}
+.profcard div{display:grid;gap:2px}.profcard span{font-size:11px;color:var(--muted)}
+.profcard p,.profcard .trbtn,.profcard .trout{grid-column:1/-1}
 .auth .hcard{padding:12px;text-align:center}
 .hcard.on{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
 .btn.wide{width:100%;justify-content:center;height:42px}
@@ -789,7 +797,7 @@ async function connect() {
       firebase.auth().onAuthStateChanged(u => {
         CLS.ready = true;
         if (u) { onSignedIn(u); renderDash(); }
-        else { clsUnsubAll(); CLS.user = null; CLS.me = null; CLS.classes = []; CLS.cid = null; CLS.cls = null; cloud.col = null; cloud.state = 'off'; lsSet('fbMe', null); refreshStatus(); renderDash(); }
+        else { clsUnsubAll(); CLS.user = null; CLS.me = null; CLS.myPriv = null; CLS.priv = {}; CLS.self = null; CLS.authMode = 'in'; CLS.authMsg = ''; CLS.view = 'home'; CLS.welcome = false; CLS.classes = []; CLS.cid = null; CLS.cls = null; cloud.col = null; cloud.state = 'off'; lsSet('fbMe', null); refreshStatus(); renderDash(); }
       });
       refreshStatus(); return;
     } catch (e) {
@@ -1724,6 +1732,65 @@ const UI_ROWS = [
 ["Choose carefully: this can't be changed later.",'اختر بعناية: لا يمكن تغيير هذا لاحقاً.','Si taxaddar leh u dooro: tan hadhow lama beddeli karo.','Choisissez bien : ce choix ne pourra plus être changé.','سوچ سمجھ کر چنیں: یہ بعد میں تبدیل نہیں ہو سکتا۔','Dikkatli seçin: bu daha sonra değiştirilemez.','Pilih dengan cermat: ini tidak bisa diubah nanti.','Chagua kwa makini: hili haliwezi kubadilishwa baadaye.'],
 ["Sign in to see your class, your lessons and your teacher's notes.",'سجّل الدخول لترى فصلك ودروسك وملاحظات معلمك.','Gal si aad u aragto fasalkaaga, casharradaada iyo qoraallada macallinkaaga.','Connectez-vous pour voir votre classe, vos leçons et les notes de votre enseignant.','اپنی کلاس، اسباق اور استاد کے نوٹس دیکھنے کے لیے سائن ان کریں۔','Sınıfınızı, derslerinizi ve öğretmeninizin notlarını görmek için giriş yapın.','Masuk untuk melihat kelas, pelajaran, dan catatan guru Anda.','Ingia ili kuona darasa lako, masomo yako na maelezo ya mwalimu wako.'],
 ["Students join their teacher's class. Teachers create classes for their students.",'ينضم الطلاب إلى فصل معلمهم. ينشئ المعلمون فصولاً لطلابهم.','Ardaydu waxay ku biiraan fasalka macallinkooda. Macallimiintu waxay u sameeyaan fasallo ardaydooda.','Les élèves rejoignent la classe de leur enseignant. Les enseignants créent des classes pour leurs élèves.','طلبہ اپنے استاد کی کلاس میں شامل ہوتے ہیں۔ اساتذہ اپنے طلبہ کے لیے کلاسیں بناتے ہیں۔','Öğrenciler öğretmenlerinin sınıfına katılır. Öğretmenler öğrencileri için sınıf oluşturur.','Murid bergabung ke kelas guru mereka. Guru membuat kelas untuk murid mereka.','Wanafunzi hujiunga na darasa la mwalimu wao. Walimu huunda madarasa kwa wanafunzi wao.'],
+["My profile","ملفي الشخصي","Astaankayga","Mon profil","میری پروفائل","Profilim","Profil saya","Wasifu wangu"],
+["Save profile","احفظ الملف","Kaydi astaanka","Enregistrer le profil","پروفائل محفوظ کریں","Profili kaydet","Simpan profil","Hifadhi wasifu"],
+["Profile saved","تم حفظ الملف","Astaanka waa la kaydiyay","Profil enregistré","پروفائل محفوظ ہو گئی","Profil kaydedildi","Profil disimpan","Wasifu umehifadhiwa"],
+["Profile","الملف الشخصي","Astaan","Profil","پروفائل","Profil","Profil","Wasifu"],
+["Welcome! Complete your profile","مرحباً! أكمل ملفك الشخصي","Soo dhawoow! Dhammaystir astaankaaga","Bienvenue ! Complétez votre profil","خوش آمدید! اپنی پروفائل مکمل کریں","Hoş geldiniz! Profilinizi tamamlayın","Selamat datang! Lengkapi profil Anda","Karibu! Kamilisha wasifu wako"],
+["About me","نبذة عني","Aniga ku saabsan","À propos de moi","میرے بارے میں","Hakkımda","Tentang saya","Kunihusu"],
+["My Quran","قرآني","Quraankayga","Mon Coran","میرا قرآن","Kuranım","Al-Quran saya","Quran yangu"],
+["Teaching","التدريس","Waxbarid","Enseignement","تدریس","Öğretmenlik","Mengajar","Ufundishaji"],
+["Private details","بيانات خاصة","Faahfaahin gaar ah","Informations privées","نجی تفصیلات","Özel bilgiler","Data pribadi","Taarifa binafsi"],
+["Seen only by you and the teachers of your classes.","لا يراها إلا أنت ومعلمو فصولك.","Waxaa arka adiga iyo macallimiinta fasalladaada oo keliya.","Visibles uniquement par vous et les enseignants de vos classes.","صرف آپ اور آپ کی کلاسوں کے اساتذہ دیکھ سکتے ہیں۔","Yalnızca siz ve sınıflarınızın öğretmenleri görür.","Hanya terlihat oleh Anda dan guru kelas Anda.","Zinaonekana kwako na walimu wa madarasa yako tu."],
+["Seen only by you.","لا يراها غيرك.","Adiga keliya ayaa arka.","Visibles uniquement par vous.","صرف آپ دیکھ سکتے ہیں۔","Yalnızca siz görürsünüz.","Hanya terlihat oleh Anda.","Zinaonekana kwako tu."],
+["City or mosque","المدينة أو المسجد","Magaalada ama masjidka","Ville ou mosquée","شہر یا مسجد","Şehir veya cami","Kota atau masjid","Mji au msikiti"],
+["Country","البلد","Dalka","Pays","ملک","Ülke","Negara","Nchi"],
+["Gender","الجنس","Jinsi","Sexe","جنس","Cinsiyet","Jenis kelamin","Jinsia"],
+["Male","ذكر","Lab","Homme","مرد","Erkek","Laki-laki","Mwanamume"],
+["Female","أنثى","Dheddig","Femme","عورت","Kadın","Perempuan","Mwanamke"],
+["Languages I speak","اللغات التي أتحدثها","Luqadaha aan ku hadlo","Langues que je parle","میری بولی جانے والی زبانیں","Konuştuğum diller","Bahasa yang saya kuasai","Lugha ninazozungumza"],
+["App language","لغة التطبيق","Luqadda app-ka","Langue de l’application","ایپ کی زبان","Uygulama dili","Bahasa aplikasi","Lugha ya programu"],
+["Ijazah and qualifications","الإجازة والمؤهلات","Ijaasada iyo shahaadooyinka","Ijaza et qualifications","اجازہ اور قابلیت","İcazet ve nitelikler","Ijazah dan kualifikasi","Ijaza na sifa"],
+["Qiraat I teach","القراءات التي أدرّسها","Qiraaadaha aan dhigo","Lectures que j’enseigne","قراءات جو میں پڑھاتا ہوں","Öğrettiğim kıraatler","Qiraat yang saya ajarkan","Qiraat ninazofundisha"],
+["Years teaching","سنوات التدريس","Sannadaha macallinnimada","Années d’enseignement","تدریس کے سال","Öğretmenlik yılı","Tahun mengajar","Miaka ya kufundisha"],
+["Level","المستوى","Heerka","Niveau","سطح","Seviye","Tingkat","Kiwango"],
+["Beginner","مبتدئ","Bilow","Débutant","ابتدائی","Başlangıç","Pemula","Mwanzo"],
+["Intermediate","متوسط","Dhexe","Intermédiaire","درمیانہ","Orta","Menengah","Kati"],
+["Advanced","متقدم","Sare","Avancé","اعلیٰ","İleri","Mahir","Juu"],
+["Hafiz","حافظ","Xaafid","Hafiz","حافظ","Hafız","Hafiz","Hafidh"],
+["What I have memorized","ما حفظته","Waxa aan xafiday","Ce que j’ai mémorisé","جو میں نے حفظ کیا","Ezberlediklerim","Hafalan saya","Nilichohifadhi"],
+["My goal","هدفي","Hadafkayga","Mon objectif","میرا ہدف","Hedefim","Target saya","Lengo langu"],
+["Phone / WhatsApp","الهاتف / واتساب","Telefoon / WhatsApp","Téléphone / WhatsApp","فون / واٹس ایپ","Telefon / WhatsApp","Telepon / WhatsApp","Simu / WhatsApp"],
+["Date of birth","تاريخ الميلاد","Taariikhda dhalashada","Date de naissance","تاریخ پیدائش","Doğum tarihi","Tanggal lahir","Tarehe ya kuzaliwa"],
+["Parent or guardian","ولي الأمر","Waalidka ama mas’uulka","Parent ou tuteur","والدین یا سرپرست","Veli","Orang tua atau wali","Mzazi au mlezi"],
+["Guardian's phone","هاتف ولي الأمر","Telefoonka mas’uulka","Téléphone du tuteur","سرپرست کا فون","Velinin telefonu","Telepon wali","Simu ya mlezi"],
+["Later","لاحقاً","Hadhow","Plus tard","بعد میں","Sonra","Nanti","Baadaye"],
+["Back","رجوع","Dib u noqo","Retour","واپس","Geri","Kembali","Rudi"],
+["This student hasn't filled in their profile yet.","لم يكمل هذا الطالب ملفه بعد.","Ardaygani weli ma buuxin astaankiisa.","Cet élève n'a pas encore rempli son profil.","اس طالب علم نے ابھی پروفائل نہیں بھری۔","Bu öğrenci henüz profilini doldurmadı.","Murid ini belum mengisi profilnya.","Mwanafunzi huyu bado hajajaza wasifu wake."],
+["Your students see your name, place and teaching details.","يرى طلابك اسمك ومكانك وتفاصيل تدريسك.","Ardaydaadu waxay arkaan magacaaga, goobtaada iyo faahfaahinta waxbaridda.","Vos élèves voient votre nom, votre lieu et vos informations d’enseignement.","آپ کے طلبہ آپ کا نام، جگہ اور تدریسی تفصیلات دیکھتے ہیں۔","Öğrencileriniz adınızı, yerinizi ve öğretmenlik bilgilerinizi görür.","Murid Anda melihat nama, tempat, dan detail mengajar Anda.","Wanafunzi wako wanaona jina lako, mahali na taarifa za ufundishaji."],
+["Your teacher sees these details. Phone numbers and date of birth are seen only by you and the teachers of your classes.","يرى معلمك هذه البيانات. أرقام الهاتف وتاريخ الميلاد لا يراها إلا أنت ومعلمو فصولك.","Macallinkaagu wuxuu arkaa faahfaahintan. Lambarrada telefoonka iyo taariikhda dhalashada waxaa arka adiga iyo macallimiinta fasalladaada oo keliya.","Votre enseignant voit ces informations. Les numéros et la date de naissance ne sont visibles que par vous et les enseignants de vos classes.","آپ کے استاد یہ تفصیلات دیکھتے ہیں۔ فون نمبر اور تاریخ پیدائش صرف آپ اور آپ کی کلاسوں کے اساتذہ دیکھتے ہیں۔","Öğretmeniniz bu bilgileri görür. Telefon ve doğum tarihi yalnızca siz ve sınıflarınızın öğretmenleri tarafından görülür.","Guru Anda melihat data ini. Nomor telepon dan tanggal lahir hanya terlihat oleh Anda dan guru kelas Anda.","Mwalimu wako anaona taarifa hizi. Namba za simu na tarehe ya kuzaliwa zinaonekana kwako na walimu wa madarasa yako tu."],
+["The role can't be changed.","لا يمكن تغيير الدور.","Doorka lama beddeli karo.","Le rôle ne peut pas être changé.","کردار تبدیل نہیں ہو سکتا۔","Rol değiştirilemez.","Peran tidak bisa diubah.","Jukumu haliwezi kubadilishwa."],
+["How will you learn?","كيف ستتعلم؟","Sidee wax u baran doontaa?","Comment allez-vous apprendre ?","آپ کیسے سیکھیں گے؟","Nasıl öğreneceksiniz?","Bagaimana Anda akan belajar?","Utajifunza vipi?"],
+["In a class","في فصل","Fasal ku jira","Dans une classe","کلاس میں","Bir sınıfta","Di kelas","Darasani"],
+["With a teacher's class code","برمز فصل من المعلم","Koodhka fasalka macallinka","Avec le code de classe d’un enseignant","استاد کے کلاس کوڈ کے ساتھ","Öğretmenin sınıf koduyla","Dengan kode kelas dari guru","Kwa msimbo wa darasa wa mwalimu"],
+["On my own","بمفردي","Kaligay","Seul","خود سے","Kendi başıma","Sendiri","Peke yangu"],
+["Plan and track yourself","خطط وتابع بنفسك","Adigu qorsheyso oo la soco","Planifiez et suivez vous-même","خود منصوبہ بنائیں اور جائزہ لیں","Kendiniz planlayın ve takip edin","Rencanakan dan pantau sendiri","Panga na fuatilia mwenyewe"],
+["Class code (if you have it)","رمز الفصل (إن وُجد)","Koodhka fasalka (haddii aad haysato)","Code de classe (si vous l’avez)","کلاس کوڈ (اگر ہے)","Sınıf kodu (varsa)","Kode kelas (jika ada)","Msimbo wa darasa (kama unao)"],
+["You can change this later.","يمكنك تغيير هذا لاحقاً.","Hadhow waad beddeli kartaa.","Vous pourrez changer plus tard.","آپ بعد میں بدل سکتے ہیں۔","Bunu sonra değiştirebilirsiniz.","Anda bisa mengubahnya nanti.","Unaweza kubadilisha baadaye."],
+["Join a class","انضم إلى فصل","Ku biir fasal","Rejoindre une classe","کلاس میں شامل ہوں","Bir sınıfa katıl","Gabung kelas","Jiunge na darasa"],
+["Learn on my own","أتعلم بمفردي","Kaligay wax baro","Apprendre seul","خود سیکھیں","Kendi başıma öğren","Belajar sendiri","Jifunze peke yangu"],
+["Learning on my own","أتعلم بمفردي","Kaligay ayaan wax u baranayaa","J’apprends seul","خود سیکھ رہا ہوں","Kendi başıma öğreniyorum","Belajar sendiri","Najifunza peke yangu"],
+["My plan for today","خطتي لليوم","Qorshahayga maanta","Mon programme du jour","آج کا میرا منصوبہ","Bugünkü planım","Rencana saya hari ini","Mpango wangu wa leo"],
+["Save my plan","احفظ خطتي","Kaydi qorshahayga","Enregistrer mon programme","میرا منصوبہ محفوظ کریں","Planımı kaydet","Simpan rencana saya","Hifadhi mpango wangu"],
+["Log a recitation","سجّل تلاوة","Diiwaangeli akhris","Noter une récitation","تلاوت درج کریں","Okuma kaydet","Catat bacaan","Andika usomaji"],
+["My recitations","تلاواتي","Akhrisyadayda","Mes récitations","میری تلاوتیں","Okumalarım","Bacaan saya","Usomaji wangu"],
+["Nothing logged yet.","لا شيء مسجل بعد.","Weli waxba lama diiwaangelin.","Rien de noté pour l’instant.","ابھی کچھ درج نہیں۔","Henüz kayıt yok.","Belum ada catatan.","Bado hakuna kilichoandikwa."],
+["Leave this class","غادر هذا الفصل","Ka bax fasalkan","Quitter cette classe","یہ کلاس چھوڑیں","Bu sınıftan ayrıl","Keluar dari kelas ini","Ondoka darasa hili"],
+["Plan saved","تم حفظ الخطة","Qorshaha waa la kaydiyay","Programme enregistré","منصوبہ محفوظ ہو گیا","Plan kaydedildi","Rencana disimpan","Mpango umehifadhiwa"],
+["Saved","تم الحفظ","Waa la kaydiyay","Enregistré","محفوظ ہو گیا","Kaydedildi","Disimpan","Imehifadhiwa"],
+["recitations","تلاوات","akhris","récitations","تلاوتیں","okuma","bacaan","usomaji"],
+["passed","ناجحة","gudbay","réussies","کامیاب","geçti","lulus","umefaulu"],
+["today","اليوم","maanta","aujourd’hui","آج","bugün","hari ini","leo"],
 ['Loading…','جارٍ التحميل…','Waa la soo rarayaa…','Chargement…','لوڈ ہو رہا ہے…','Yükleniyor…','Memuat…','Inapakia…'],
 ['Connect to the internet to sign in the first time.','اتصل بالإنترنت لتسجيل الدخول أول مرة.','Ku xidh internetka si aad u gasho markii ugu horreysay.','Connectez-vous à internet pour vous connecter la première fois.','پہلی بار سائن ان کرنے کے لیے انٹرنیٹ سے جڑیں۔','İlk kez giriş yapmak için internete bağlanın.','Sambungkan ke internet untuk masuk pertama kali.','Unganisha intaneti ili uingie mara ya kwanza.'],
 ["You're offline. Your Quran and notes work; your class needs internet.",'أنت غير متصل. المصحف والملاحظات تعمل؛ الفصل يحتاج إلى الإنترنت.','Internet ma haysid. Quraanka iyo qoraalladu way shaqeynayaan; fasalku wuxuu u baahan yahay internet.','Vous êtes hors ligne. Le Coran et vos notes fonctionnent ; la classe a besoin d’internet.','آپ آف لائن ہیں۔ قرآن اور نوٹس کام کرتے ہیں؛ کلاس کے لیے انٹرنیٹ چاہیے۔','Çevrimdışısınız. Kuran ve notlar çalışır; sınıf için internet gerekir.','Anda offline. Al-Quran dan catatan berfungsi; kelas perlu internet.','Huna intaneti. Quran na maelezo yanafanya kazi; darasa linahitaji intaneti.'],
@@ -2045,8 +2112,12 @@ function authHtml() {
   return `<div class="auth"><h2>${up ? 'Create your account' : 'Sign in'}</h2>
     <p class="sub">${up ? 'Students join their teacher\'s class. Teachers create classes for their students.' : 'Sign in to see your class, your lessons and your teacher\'s notes.'}</p>
     ${up ? `<div class="hcards" style="margin-bottom:10px"><button class="hcard${CLS.newRole !== 'teacher' ? ' on' : ''}" data-arole="student"><b>I'm a student</b></button><button class="hcard${CLS.newRole === 'teacher' ? ' on' : ''}" data-arole="teacher"><b>I'm a teacher</b></button></div>
+      <div id="aHow"${CLS.newRole === 'teacher' ? ' hidden' : ''}><div class="sub" style="margin-bottom:4px">How will you learn?</div>
+        <div class="hcards"><button class="hcard${CLS.newMode !== 'solo' ? ' on' : ''}" data-amode="class"><b>In a class</b><span>With a teacher's class code</span></button><button class="hcard${CLS.newMode === 'solo' ? ' on' : ''}" data-amode="solo"><b>On my own</b><span>Plan and track yourself</span></button></div>
+        <label class="dfield" id="aCodeF"${CLS.newMode === 'solo' ? ' hidden' : ''}><span>Class code (if you have it)</span><input id="aCode" maxlength="8" style="text-transform:uppercase;letter-spacing:.1em"></label></div>
       <label class="dfield"><span>Full name</span><input id="aName" autocomplete="name"></label>
-      <label class="dfield"><span>Place</span><input id="aPlace" placeholder="City or mosque"></label>` : ''}
+      <label class="dfield"><span>Place</span><input id="aPlace" placeholder="City or mosque"></label>
+      <label class="dfield"><span>App language</span><select id="aLang">${UI_LANGS.map(([c, n]) => `<option value="${c}"${c === uiLang ? ' selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
     <label class="dfield"><span>Email</span><input id="aEmail" type="email" autocomplete="email"></label>
     <label class="dfield"><span>Password</span><input id="aPass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="${up ? 'At least 6 characters' : ''}"></label>
     ${CLS.authMsg ? `<p class="serr">${esc(CLS.authMsg)}</p>` : ''}
@@ -2064,12 +2135,14 @@ function authError(e) {
     : 'Something went wrong. Try again.';
 }
 async function doAuth() {
-  const email = $('#aEmail').value.trim(), pass = $('#aPass').value, name = ($('#aName') || {}).value || '', place = ($('#aPlace') || {}).value || '';
+  const email = $('#aEmail').value.trim(), pass = $('#aPass').value, name = ($('#aName') || {}).value || '', place = ($('#aPlace') || {}).value || ''; const code = (($('#aCode') || {}).value || '').trim();
   CLS.busy = true; CLS.authMsg = ''; renderDash();
   try {
     if (CLS.authMode === 'up') {
       if (!name.trim()) throw {code: 'name'};
-      CLS.pendingProfile = {role: CLS.newRole === 'teacher' ? 'teacher' : 'student', name: name.trim().slice(0, 80), place: place.trim().slice(0, 80), email, lang: uiLang, classIds: [], created: Date.now()};
+      CLS.pendingProfile = {role: CLS.newRole === 'teacher' ? 'teacher' : 'student', name: name.trim().slice(0, 80), place: place.trim().slice(0, 80), lang: uiLang, classIds: [], created: Date.now()};
+      CLS.pendingPrivate = {email, teachers: []};
+      if (CLS.pendingProfile.role === 'student') { CLS.pendingProfile.mode = CLS.newMode === 'solo' ? 'solo' : 'class'; CLS.pendingCode = CLS.newMode === 'solo' ? '' : code; }
       await firebase.auth().createUserWithEmailAndPassword(email, pass);
     } else await firebase.auth().signInWithEmailAndPassword(email, pass);
   } catch (e) { CLS.authMsg = e && e.code === 'name' ? 'Please write your full name.' : authError(e); }
@@ -2079,12 +2152,13 @@ async function onSignedIn(u) {
   CLS.user = u; cloud.uid = u.uid; cloud.col = fbdb().collection('data/users/' + u.uid); cloud.state = 'on';
   for (const p of Object.keys(dirty)) flush(+p);
   visible().forEach(loadCloudPage); refreshStatus();
-  if (CLS.pendingProfile) { CLS.me = CLS.pendingProfile; CLS.pendingProfile = null; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
+  if (CLS.pendingProfile) { CLS.me = CLS.pendingProfile; CLS.pendingProfile = null; CLS.view = 'profile'; CLS.welcome = true; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} if (CLS.pendingPrivate) { CLS.myPriv = CLS.pendingPrivate; CLS.pendingPrivate = null; try { await fbdb().doc(`users/${u.uid}/private/info`).set(CLS.myPriv); } catch {} } }
   else { for (let i = 0; i < 6 && !CLS.me; i++) { try { const d = await fbdb().doc('users/' + u.uid).get(); CLS.me = d.exists ? d.data() : null; } catch {} if (!CLS.me) await new Promise(r => setTimeout(r, 500)); } }
   if (!CLS.me) { CLS.me = {role: 'student', name: u.email || 'Student', classIds: [], created: Date.now()}; try { await fbdb().doc('users/' + u.uid).set(CLS.me); } catch {} }
   if (CLS.me.lang && CLS.me.lang !== uiLang && !lsGet('prefs')?.ui) setUiLang(CLS.me.lang);
   lsSet('fbMe', {role: CLS.me.role, name: CLS.me.name || ''});
   await clsLoad();
+  if (CLS.pendingCode) { const code = CLS.pendingCode; CLS.pendingCode = ''; await joinClass(code); }
   openDash('list');
 }
 async function clsLoad() {
@@ -2134,13 +2208,106 @@ function clsHtml() {
   const me = CLS.me || {}, isT = me.role === 'teacher';
   const top = `<div class="hhead"><div><h2>Assalamu alaikum${me.name ? ', ' + esc(me.name.split(' ')[0]) : ''}</h2><div class="sub">${isT ? 'Teacher' : 'Student'} · ${esc(CLS.user.email || '')}</div></div><span class="grow"></span>
     ${CLS.classes.length > 1 || isT ? `<select id="clsPick" aria-label="Class">${!isT ? '' : '<option value="">All my classes</option>'}${CLS.classes.map(c => `<option value="${c.id}"${c.id === CLS.cid ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : ''}
-    <button class="btn" id="aOut">Sign out</button></div>`;
+    <button class="btn" id="profOpen" aria-pressed="${CLS.view === 'profile'}">My profile</button><button class="btn" id="aOut">Sign out</button></div>`;
+  if (CLS.view === 'profile') return top + profileHtml();
   return top + (isT ? teacherClsHtml() : studentClsHtml());
 }
+/* ---- profile ----
+   users/{uid}               public: name, place, country, gender, spoken, about, lang; students: level, memorized, goal; teachers: ijazah, qiraat, years
+   users/{uid}/private/info  only the person and the teachers of their classes: email, phone, dob, guardian, guardianPhone, teachers:[uid] */
+const PUB_F = ['name', 'place', 'country', 'gender', 'spoken', 'about', 'level', 'memorized', 'goal', 'ijazah', 'qiraat', 'years'];
+const PRIV_F = ['phone', 'dob', 'guardian', 'guardianPhone'];
+const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Hafiz'];
+async function loadMyPriv() {
+  if (CLS.myPriv) return CLS.myPriv;
+  try { const d = await fbdb().doc(`users/${cloud.uid}/private/info`).get(); CLS.myPriv = d.exists ? d.data() : {}; } catch { CLS.myPriv = {}; }
+  return CLS.myPriv;
+}
+function pf(id, label, val, opts) {
+  opts = opts || {};
+  const v = esc(val || '');
+  const input = opts.select ? `<select id="pf-${id}"><option value=""></option>${opts.select.map(o => `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+    : opts.area ? `<textarea id="pf-${id}" dir="auto" rows="3">${v}</textarea>`
+    : `<input id="pf-${id}" dir="auto" value="${v}"${opts.type ? ` type="${opts.type}"` : ''}${opts.ph ? ` placeholder="${esc(opts.ph)}"` : ''}>`;
+  return `<label class="dfield${opts.wide ? ' wide' : ''}"><span>${label}</span>${input}</label>`;
+}
+function profileHtml() {
+  const me = CLS.me || {}, p = CLS.myPriv, isT = me.role === 'teacher';
+  if (!p) { loadMyPriv().then(() => renderDash()); return gateWait(); }
+  return `<div class="profpage">
+    ${CLS.welcome ? `<div class="sescard"><h4>Welcome! Complete your profile</h4><p>${isT ? 'Your students see your name, place and teaching details.' : 'Your teacher sees these details. Phone numbers and date of birth are seen only by you and the teachers of your classes.'}</p></div>` : ''}
+    <div class="sect">About me</div>
+    <div class="dprof">
+      ${pf('name', 'Full name', me.name)}${pf('place', 'City or mosque', me.place)}${pf('country', 'Country', me.country)}
+      ${pf('gender', 'Gender', me.gender, {select: ['Male', 'Female']})}
+      ${pf('spoken', 'Languages I speak', me.spoken, {ph: 'Somali, Arabic, English'})}
+      <label class="dfield"><span>App language</span><select id="pf-lang">${UI_LANGS.map(([c, n]) => `<option value="${c}"${c === uiLang ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+      ${pf('about', 'About me', me.about, {area: true, wide: true})}
+    </div>
+    <div class="sect">${isT ? 'Teaching' : 'My Quran'}</div>
+    <div class="dprof">${isT
+      ? pf('ijazah', 'Ijazah and qualifications', me.ijazah, {area: true, wide: true}) + pf('qiraat', 'Qiraat I teach', me.qiraat, {ph: 'Hafs, Warsh…'}) + pf('years', 'Years teaching', me.years, {type: 'number'})
+      : pf('level', 'Level', me.level, {select: LEVELS}) + pf('memorized', 'What I have memorized', me.memorized, {ph: 'Juz 30, Al-Baqarah 1–50'}) + pf('goal', 'My goal', me.goal, {ph: 'Finish Juz 29 this year', wide: true})}
+    </div>
+    <div class="sect">Private details</div>
+    <p class="sub">Seen only by you${isT ? '' : ' and the teachers of your classes'}.</p>
+    <div class="dprof">
+      <label class="dfield"><span>Email</span><input value="${esc((CLS.user && CLS.user.email) || p.email || '')}" disabled></label>
+      ${pf('phone', 'Phone / WhatsApp', p.phone, {type: 'tel'})}${pf('dob', 'Date of birth', p.dob, {type: 'date'})}
+      ${isT ? '' : pf('guardian', 'Parent or guardian', p.guardian) + pf('guardianPhone', "Guardian's phone", p.guardianPhone, {type: 'tel'})}
+    </div>
+    <p class="sub"><b>${isT ? 'Teacher' : 'Student'}</b> · <span>The role can't be changed.</span></p>
+    ${CLS.profMsg ? `<p class="sub">${esc(CLS.profMsg)}</p>` : ''}
+    <div class="nact"><button class="btn primary" id="profSave">Save profile</button><button class="btn" id="profClose">${CLS.welcome ? 'Later' : 'Back'}</button></div>
+  </div>`;
+}
+async function saveProfile2() {
+  const val = id => { const el = $('#pf-' + id); return el ? String(el.value || '').trim().slice(0, id === 'about' || id === 'ijazah' ? 1000 : 120) : undefined; };
+  const pub = {}, priv = {};
+  for (const k of PUB_F) { const v = val(k); if (v !== undefined) pub[k] = v; }
+  for (const k of PRIV_F) { const v = val(k); if (v !== undefined) priv[k] = v; }
+  if (!pub.name) { CLS.profMsg = 'Please write your full name.'; return renderDash(); }
+  pub.lang = uiLang;
+  const teachers = [...new Set([...((CLS.myPriv || {}).teachers || []), ...CLS.classes.map(c => c.teacherId).filter(t => t && t !== cloud.uid)])];
+  try {
+    await fbdb().doc('users/' + cloud.uid).update(pub);
+    Object.assign(CLS.me, pub);
+    CLS.myPriv = {...(CLS.myPriv || {}), ...priv, email: (CLS.user && CLS.user.email) || (CLS.myPriv || {}).email || '', teachers};
+    await fbdb().doc(`users/${cloud.uid}/private/info`).set(CLS.myPriv);
+    lsSet('fbMe', {role: CLS.me.role, name: CLS.me.name || ''});
+    CLS.profMsg = ''; CLS.welcome = false; CLS.view = 'home'; showToast('Profile saved', false);
+  } catch { CLS.profMsg = "Couldn't save. Check your connection and try again."; }
+  renderDash();
+}
+async function shareProfileWith(teacherId) {
+  if (!teacherId || teacherId === cloud.uid) return;
+  const p = await loadMyPriv();
+  if ((p.teachers || []).includes(teacherId)) return;
+  CLS.myPriv = {...p, email: p.email || (CLS.user && CLS.user.email) || '', teachers: [...(p.teachers || []), teacherId]};
+  try { await fbdb().doc(`users/${cloud.uid}/private/info`).set(CLS.myPriv); } catch {}
+}
+async function loadStudentPriv(id) {
+  CLS.priv = CLS.priv || {};
+  if (CLS.priv[id]) return;
+  try { const d = await fbdb().doc(`users/${id}/private/info`).get(); CLS.priv[id] = d.exists ? d.data() : {}; } catch { CLS.priv[id] = {}; }
+  renderDashSoft();
+}
+function studentProfileCard(id) {
+  const m = CLS.members[id] || {}, p = (CLS.priv || {})[id];
+  if (!p) loadStudentPriv(id);
+  const row = (k, v) => v ? `<div><span>${k}</span><b dir="auto">${esc(v)}</b></div>` : '';
+  const rows = row('Level', m.level) + row('What I have memorized', m.memorized) + row('My goal', m.goal) + row('Gender', m.gender) + row('Country', m.country) + row('Languages I speak', m.spoken)
+    + (p ? row('Phone / WhatsApp', p.phone) + row('Date of birth', p.dob) + row('Parent or guardian', p.guardian) + row("Guardian's phone", p.guardianPhone) + row('Email', p.email) : '');
+  return `<div class="sect">Profile</div><div class="profcard">${rows || '<p class="empty">This student hasn\'t filled in their profile yet.</p>'}${m.about ? `<p dir="auto" class="sub">${esc(m.about)}</p>${trBtn(m.about, m.lang)}` : ''}</div>`;
+}
+function joinBox(primary) {
+  return `<div class="sesjoin"><input id="joinCode" maxlength="8" placeholder="Class code"><button class="btn${primary ? ' primary' : ''}" id="joinGo">Join class</button></div>${CLS.joinMsg ? `<p class="serr">${esc(CLS.joinMsg)}</p>` : ''}`;
+}
 function studentClsHtml() {
-  if (!CLS.cls) return `<div class="hsplit"><div><div class="sescard"><h4>You're learning on your own</h4><p>Everything you mark is saved to your account. When your teacher gives you a class code, join here.</p>
-    <div class="sesjoin"><input id="joinCode" maxlength="8" placeholder="Class code"><button class="btn primary" id="joinGo">Join class</button></div>${CLS.joinMsg ? `<p class="serr">${esc(CLS.joinMsg)}</p>` : ''}</div>
-    ${ownSummaryHtml()}</div><div></div></div>`;
+  if (!CLS.cls && CLS.me.mode !== 'solo') return `<div class="hrole"><h2>How will you learn?</h2><p class="sub">You can change this later.</p>
+    <div class="hcards"><div class="hcard"><b>Join a class</b><span>Your teacher gives you a class code. You'll see today's Sabaq, Sabqi and Murajaah, your turn to recite, and your teacher's marks.</span>${joinBox(true)}</div>
+    <button class="hcard" id="goSolo"><b>Learn on my own</b><span>Set your own daily Sabaq, Sabqi and Murajaah and keep a record of how each recitation went.</span></button></div></div>`;
+  if (!CLS.cls) return soloHtml();
   const plan = CLS.plans[cloud.uid] || {}, day = CLS.day || {}, q = day.queue || [], pos = q.indexOf(cloud.uid), cur = day.current;
   const nxt = nextClassTime(CLS.cls.schedule);
   const att = (day.att || {})[cloud.uid];
@@ -2156,8 +2323,73 @@ function studentClsHtml() {
       ${(CLS.cls.schedule || []).length ? `<div class="sub">${CLS.cls.schedule.map(x => `${DAYS[x.d]} ${x.s}–${x.e}`).join(' · ')}</div>` : ''}</div>
     <div class="sect">My daily summary · ${recs.length} recitations · ${passN} passed</div>
     ${recs.length ? recs.map(recordCard).join('') : '<p class="empty">Your teacher\'s marks and comments will appear here after you recite.</p>'}
-    <div class="sescard"><h4>Join another class</h4><div class="sesjoin"><input id="joinCode" maxlength="8" placeholder="Class code"><button class="btn" id="joinGo">Join</button></div>${CLS.joinMsg ? `<p class="serr">${esc(CLS.joinMsg)}</p>` : ''}</div>
+    <div class="sescard"><h4>Join another class</h4>${joinBox(false)}</div>
+    <div class="nact"><button class="btn" id="leaveCls">Leave this class</button></div>
   </div><div>${clsChatHtml(cloud.uid)}</div></div>`;
+}
+/* self-study: data/users/{uid}/selfplan {sabaq,sabqi,murajaah,updated}; selflog {items:[{t,type,from,to,result,comment}]} */
+async function loadSelf() {
+  if (CLS.self) return;
+  CLS.self = {plan: {}, log: []};
+  try { const [p, l] = await Promise.all([cloud.col.doc('selfplan').get(), cloud.col.doc('selflog').get()]); CLS.self.plan = p.exists ? p.data() : {}; CLS.self.log = l.exists ? l.data().items || [] : []; } catch {}
+  renderDash();
+}
+function soloHtml() {
+  if (!CLS.self) { loadSelf(); return gateWait(); }
+  const p = CLS.self.plan, log = CLS.self.log, passN = log.filter(r => r.result === 'pass').length;
+  const todayN = log.filter(r => dayLabel(r.t) === dayLabel(Date.now())).length;
+  return `<div class="hsplit"><div>
+    <div class="sect">Learning on my own</div>
+    <div class="dstats"><div><b>${log.length}</b><span>recitations</span></div><div><b>${passN}</b><span>passed</span></div><div><b>${todayN}</b><span>today</span></div></div>
+    <div class="sect">My plan for today</div>
+    <div class="pedit">${TYPES.map(([t, ar, en]) => `<div class="prow"><b>${ar}</b><span class="sub">${en}</span><input data-spf="${t}" value="${esc(p[t] && p[t].from || '')}" placeholder="from 2:1"><input data-spt="${t}" value="${esc(p[t] && p[t].to || '')}" placeholder="to 2:5">${p[t] && p[t].from ? `<button class="btn" data-gotor="${esc(p[t].from)}">Open</button>` : ''}</div>`).join('')}
+      <div class="nact"><button class="btn primary" id="spSave">Save my plan</button></div></div>
+    <div class="sect">Log a recitation</div>
+    <div class="pedit"><div class="prow"><select id="soloType">${TYPES.map(([t, ar, en]) => `<option value="${t}">${ar} · ${en}</option>`).join('')}</select><input id="soloFrom" placeholder="from 2:1"><input id="soloTo" placeholder="to 2:5"></div>
+      <div class="resbtns"><button class="btn res pass" data-sres="pass" aria-pressed="${CLS.sres === 'pass'}">✓ Passed</button><button class="btn res fail" data-sres="repeat" aria-pressed="${CLS.sres === 'repeat'}">✕ Repeat</button></div>
+      <textarea class="snote" id="soloNote" dir="auto" placeholder="How did it go? Which words were hard?"></textarea>
+      <div class="nact"><button class="btn primary" id="soloSave">Save</button></div></div>
+    <div class="sect">My recitations</div>${log.length ? log.map(recordCard).join('') : '<p class="empty">Nothing logged yet.</p>'}
+  </div><div>
+    <div class="sescard"><h4>Join a class</h4><p>If a teacher gives you a class code, you can join their class at any time.</p>${joinBox(true)}</div>
+    ${ownSummaryHtml()}
+  </div></div>`;
+}
+async function saveSelfPlan() {
+  const plan = {updated: Date.now()};
+  for (const [t] of TYPES) {
+    const a = $(`[data-spf="${t}"]`).value.trim(), b = $(`[data-spt="${t}"]`).value.trim();
+    if (!a) continue;
+    const from = parseRef(a), to = b ? parseRef(b) : from;
+    if (!from || !to) { showToast('Write ayahs like 2:1 (surah:ayah).', false); return; }
+    plan[t] = {from, to};
+  }
+  try { await cloud.col.doc('selfplan').set(plan); CLS.self.plan = plan; showToast('Plan saved', false); } catch { showToast("Couldn't save. Check your connection.", false); }
+  renderDash();
+}
+async function saveSelfLog() {
+  const from = parseRef($('#soloFrom').value), to = $('#soloTo').value.trim() ? parseRef($('#soloTo').value) : from;
+  if (!from || !to) { showToast('Write ayahs like 2:1 (surah:ayah).', false); return; }
+  if (!CLS.sres) { showToast('Choose Passed or Repeat.', false); return; }
+  const item = {t: Date.now(), type: $('#soloType').value, from, to, result: CLS.sres, comment: $('#soloNote').value.trim().slice(0, 1000), lang: uiLang};
+  const items = [item, ...CLS.self.log].slice(0, 500);
+  try { await cloud.col.doc('selflog').set({items}); CLS.self.log = items; CLS.sres = null; showToast('Saved', false); } catch { showToast("Couldn't save. Check your connection.", false); }
+  renderDash();
+}
+async function setLearnMode(mode) {
+  CLS.me.mode = mode;
+  try { await fbdb().doc('users/' + cloud.uid).update({mode}); } catch {}
+  renderDash();
+}
+async function leaveClass(cid) {
+  const ref = fbdb().doc('classes/' + cid);
+  try {
+    const cls = (await ref.get()).data() || {};
+    await ref.update({studentIds: (cls.studentIds || []).filter(x => x !== cloud.uid)});
+    const classIds = (CLS.me.classIds || []).filter(x => x !== cid);
+    await fbdb().doc('users/' + cloud.uid).update({classIds}); CLS.me.classIds = classIds;
+    clsUnsubAll(); CLS.cid = null; CLS.cls = null; CLS.records = []; CLS.plans = {}; CLS.day = null; await clsLoad(); renderDash();
+  } catch { showToast("Couldn't leave the class. Check your connection.", false); }
 }
 function ownSummaryHtml() {
   const c = {}; let n = 0;
@@ -2217,6 +2449,7 @@ function teacherStudentClsHtml(id) {
   return `<button class="btn" id="stuBack">← ${esc(CLS.cls.name)}</button>
     <div class="dhead"><h2>${esc(m.name || 'Student')}</h2><span class="dsub">${esc(m.place || '')}</span><span class="grow"></span><button class="btn primary" data-clslesson="${id}">Start lesson & send code</button></div>
     <div class="hsplit"><div>
+      ${studentProfileCard(id)}
       <div class="sect">Today's plan</div>${planEditor(id)}
       <div class="sect">Record a recitation</div>
       <div class="pedit"><div class="prow"><select id="recType">${TYPES.map(([t, ar, en]) => `<option value="${t}">${ar} · ${en}</option>`).join('')}</select><input id="recFrom" placeholder="from 2:1"><input id="recTo" placeholder="to 2:5"></div>
@@ -2312,6 +2545,8 @@ async function joinClass(code) {
     if (!ids.includes(cloud.uid)) await ref.update({studentIds: [...ids, cloud.uid]});
     const classIds = [...new Set([...(CLS.me.classIds || []), cid])];
     await fbdb().doc('users/' + cloud.uid).update({classIds}); CLS.me.classIds = classIds;
+    if (cls && cls.teacherId) await shareProfileWith(cls.teacherId);
+    if (CLS.me.mode !== 'class') { CLS.me.mode = 'class'; try { await fbdb().doc('users/' + cloud.uid).update({mode: 'class'}); } catch {} }
     CLS.cid = cid; await clsLoad();
   } catch { CLS.joinMsg = "Couldn't join. Check the code and your connection."; renderDash(); }
 }
@@ -3742,9 +3977,18 @@ $('#dBody').addEventListener('click', async e => {
   const isT = CLS.me && CLS.me.role === 'teacher';
   if (b.id === 'aGo') doAuth();
   else if (b.id === 'aSwitch') { CLS.authMode = CLS.authMode === 'up' ? 'in' : 'up'; CLS.authMsg = ''; renderDash(); }
-  else if (b.dataset.arole) { CLS.newRole = b.dataset.arole; document.querySelectorAll('[data-arole]').forEach(x => x.classList.toggle('on', x === b)); }
+  else if (b.dataset.arole) { CLS.newRole = b.dataset.arole; document.querySelectorAll('[data-arole]').forEach(x => x.classList.toggle('on', x === b)); const h = $('#aHow'); if (h) h.hidden = CLS.newRole === 'teacher'; }
   else if (b.id === 'aForgot') { const em = $('#aEmail').value.trim(); if (!em) { CLS.authMsg = 'Write your email first, then press Forgot password.'; return renderDash(); } try { await firebase.auth().sendPasswordResetEmail(em); CLS.authMsg = 'We sent a link to reset your password. Check your email.'; } catch (err) { CLS.authMsg = authError(err); } renderDash(); }
   else if (b.id === 'aOut') { await firebase.auth().signOut(); }
+  else if (b.dataset.amode) { CLS.newMode = b.dataset.amode; document.querySelectorAll('[data-amode]').forEach(x => x.classList.toggle('on', x === b)); const cf = $('#aCodeF'); if (cf) cf.hidden = CLS.newMode === 'solo'; }
+  else if (b.id === 'goSolo') setLearnMode('solo');
+  else if (b.id === 'spSave') saveSelfPlan();
+  else if (b.dataset.sres) { CLS.sres = b.dataset.sres; document.querySelectorAll('[data-sres]').forEach(x => x.setAttribute('aria-pressed', x === b)); }
+  else if (b.id === 'soloSave') { b.disabled = true; await saveSelfLog(); }
+  else if (b.id === 'leaveCls') { if (CLS.cid && confirm('Leave this class? Your teacher will no longer see you in it.')) leaveClass(CLS.cid); }
+  else if (b.id === 'profOpen') { CLS.view = CLS.view === 'profile' ? 'home' : 'profile'; CLS.profMsg = ''; renderDash(); }
+  else if (b.id === 'profSave') { b.disabled = true; await saveProfile2(); }
+  else if (b.id === 'profClose') { CLS.view = 'home'; CLS.welcome = false; CLS.profMsg = ''; renderDash(); }
   else if (b.id === 'joinGo') joinClass($('#joinCode').value);
   else if (b.dataset.gotor) { const [s1, a1] = b.dataset.gotor.split(':').map(Number); closeDash(); goto(Q.p[s1 - 1][a1 - 1]); }
   else if (b.id === 'newClsGo') { b.disabled = true; try { await createClass($('#newCls').value); } catch { showToast("The class couldn't be created. Check the connection.", false); } b.disabled = false; }
@@ -3781,6 +4025,9 @@ $('#dBody').addEventListener('keydown', e => {
   if (!cloud.fbApp) return;
   if (e.target.id === 'clsChatIn' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#clsChatSend').click(); }
   if ((e.target.id === 'aPass' || e.target.id === 'aEmail') && e.key === 'Enter') { e.preventDefault(); doAuth(); }
+});
+$('#dBody').addEventListener('change', e => {
+  if (e.target.id === 'aLang' || e.target.id === 'pf-lang') { setUiLang(e.target.value, true); savePrefs(); }
 });
 $('#dBody').addEventListener('change', async e => {
   if (!cloud.fbApp) return;
