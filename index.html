@@ -204,6 +204,12 @@ body.abar-open .panel{bottom:120px}
 @keyframes rkcur{50%{box-shadow:inset 0 -3px 0 transparent}}
 .rdot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
 .rdot.on{background:#e5484d;animation:rkcur 1s infinite}
+#xIn{flex:1 1 220px;min-width:0;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:inherit;padding:0 10px;font:inherit}
+.xres{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px}
+.xres:empty{display:none}
+.xres button{font-size:13px}
+.xres .ar{font-family:var(--qfont, serif);margin-inline-start:6px}
+.w.exhit{background:color-mix(in srgb,#f5c542 42%,transparent);border-radius:4px;box-shadow:0 0 0 2px color-mix(in srgb,#f5c542 42%,transparent)}
 .rheard{flex:1 1 180px;min-width:0;font-family:var(--f-quran);font-size:18px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .play-r{background:#e5484d;border-color:#e5484d;color:#fff}
 .chkrow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
@@ -608,6 +614,7 @@ canvas.over{z-index:4}
     <button class="btn" data-tool="listen" title="Tap a word to hear it, or an ayah number to play from there"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg><span class="lbl">Listen</span></button>
     <button class="btn" id="hideBtn" aria-pressed="false" title="Hide the words and recite from memory; tap a word to reveal it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.9 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg><span class="lbl">Hide &amp; recite</span></button>
     <button class="btn" id="reciteBtn" title="Recite aloud; the page follows you and flags possible mistakes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="lbl">Recite &amp; check</span></button>
+    <button class="btn" id="findBtn" aria-pressed="false" title="Say or type a verse and its page opens with the ayah highlighted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><span class="lbl">Find verse</span></button>
     <button class="btn" id="sesBtn" aria-pressed="false" title="Recite to your teacher on WhatsApp while they mark mistakes here, live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20a5.5 5.5 0 0 1 11 0M13.5 20a4 4 0 0 1 8 0"/></svg><span class="lbl">Teacher session</span></button>
     <button class="btn" id="dashBtn" title="Your students, their lessons, mistakes and results"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span class="lbl">Dashboard</span></button>
   </div>
@@ -641,6 +648,18 @@ canvas.over{z-index:4}
   <p class="ablock" id="aBlock" hidden>Claude's page viewer doesn't let recitations play here. Use <strong>quran.com ↗</strong> to listen to this ayah, or open your audio copy of Mushaf Notebook, where every sheikh plays inside the page.</p>
 </div>
 
+<div class="abar rbar xbar" id="xbar" hidden>
+  <div class="abar-in">
+    <span class="rdot" id="xDot" aria-hidden="true"></span>
+    <div class="anow"><b>Find verse</b><span id="xSub">Say the verse, or type it</span></div>
+    <input id="xIn" dir="auto" placeholder="2:255 · Al-Kahf 10 · words of the ayah" aria-label="Verse to find">
+    <button class="btn" id="xGo">Find</button>
+    <button class="btn play-r" id="xListen">🎙 Listen</button>
+    <div class="rheard" id="xHeard" dir="rtl" aria-live="polite"></div>
+    <button class="btn icon" id="xClose" aria-label="Close">✕</button>
+    <div class="xres" id="xRes"></div>
+  </div>
+</div>
 <div class="abar rbar" id="rbar" hidden>
   <div class="abar-in">
     <span class="rdot" id="rDot" aria-hidden="true"></span>
@@ -1829,6 +1848,16 @@ const UI_ROWS = [
 ["Waiting for your teacher","بانتظار معلمك","Sugaya macallinkaaga","En attente de votre enseignant","آپ کے استاد کا انتظار","Öğretmeniniz bekleniyor","Menunggu guru Anda","Inasubiri mwalimu wako"],
 ["Choose the time you would like.","اختر الوقت الذي تريده.","Dooro waqtiga aad rabto.","Choisissez l’horaire souhaité.","اپنی پسند کا وقت چنیں۔","İstediğiniz saati seçin.","Pilih waktu yang Anda inginkan.","Chagua muda unaotaka."],
 ['Firebase refused the save. Check that the latest firestore.rules are published in the Firebase console.','رفض Firebase الحفظ. تأكد من نشر أحدث قواعد firestore.rules في لوحة Firebase.','Firebase wuu diiday kaydinta. Hubi in firestore.rules-ka ugu dambeeyay lagu daabacay Firebase console.','Firebase a refusé l’enregistrement. Vérifiez que les dernières règles firestore.rules sont publiées dans la console Firebase.','Firebase نے محفوظ کرنے سے انکار کیا۔ دیکھیں کہ تازہ firestore.rules فائر بیس کنسول میں شائع ہیں۔','Firebase kaydetmeyi reddetti. En son firestore.rules kurallarının Firebase konsolunda yayınlandığını kontrol edin.','Firebase menolak penyimpanan. Pastikan firestore.rules terbaru sudah dipublikasikan di konsol Firebase.','Firebase imekataa kuhifadhi. Hakikisha firestore.rules mpya zimechapishwa kwenye Firebase console.'],
+["Find verse","ابحث عن آية","Raadi aayad","Trouver un verset","آیت تلاش کریں","Ayet bul","Cari ayat","Tafuta aya"],
+["Say the verse, or type it","قل الآية أو اكتبها","Dheh aayadda ama qor","Dites le verset ou tapez-le","آیت بولیں یا لکھیں","Ayeti söyleyin veya yazın","Ucapkan ayat atau ketik","Sema aya au iandike"],
+["Find","ابحث","Raadi","Chercher","تلاش","Bul","Cari","Tafuta"],
+["🎙 Listen","🎙 استمع","🎙 Dhegayso","🎙 Écouter","🎙 سنیں","🎙 Dinle","🎙 Dengarkan","🎙 Sikiliza"],
+["■ Stop","■ توقف","■ Jooji","■ Arrêter","■ روکیں","■ Durdur","■ Berhenti","■ Simamisha"],
+["Listening… read or say the verse","أستمع… اقرأ الآية أو قلها","Waan dhegaysanayaa… akhri ama dheh aayadda","J’écoute… lisez ou dites le verset","سن رہا ہوں… آیت پڑھیں یا بولیں","Dinliyorum… ayeti okuyun veya söyleyin","Mendengarkan… baca atau ucapkan ayat","Ninasikiliza… soma au sema aya"],
+["Not found. Try a few more words.","لم يُعثر عليها. جرّب كلمات أكثر.","Lama helin. Isku day ereyo dheeraad ah.","Introuvable. Essayez quelques mots de plus.","نہیں ملی۔ کچھ اور الفاظ آزمائیں۔","Bulunamadı. Birkaç kelime daha deneyin.","Tidak ditemukan. Coba beberapa kata lagi.","Haikupatikana. Jaribu maneno zaidi."],
+["Listening needs an internet connection.","الاستماع يحتاج إلى اتصال بالإنترنت.","Dhegaysigu wuxuu u baahan yahay internet.","L’écoute nécessite une connexion internet.","سننے کے لیے انٹرنیٹ چاہیے۔","Dinleme için internet gerekir.","Mendengarkan perlu koneksi internet.","Kusikiliza kunahitaji intaneti."],
+["This browser cannot hear. Use Chrome or Edge.","هذا المتصفح لا يسمع. استخدم كروم أو إيدج.","Browser-kani ma maqli karo. Isticmaal Chrome ama Edge.","Ce navigateur ne peut pas écouter. Utilisez Chrome ou Edge.","یہ براؤزر سن نہیں سکتا۔ کروم یا ایج استعمال کریں۔","Bu tarayıcı dinleyemez. Chrome veya Edge kullanın.","Browser ini tidak bisa mendengar. Gunakan Chrome atau Edge.","Kivinjari hiki hakisikii. Tumia Chrome au Edge."],
+["Listening needs your microphone. Open your audio copy of Mushaf Notebook.","الاستماع يحتاج إلى الميكروفون. افتح نسختك الصوتية من دفتر المصحف.","Dhegaysigu wuxuu u baahan yahay makarafoonka. Fur nuqulkaaga codka ee Mushaf Notebook.","L’écoute nécessite votre micro. Ouvrez votre copie audio de Mushaf Notebook.","سننے کے لیے مائیکروفون چاہیے۔ Mushaf Notebook کی آڈیو کاپی کھولیں۔","Dinleme için mikrofon gerekir. Mushaf Notebook ses kopyanızı açın.","Mendengarkan perlu mikrofon. Buka salinan audio Mushaf Notebook.","Kusikiliza kunahitaji maikrofoni. Fungua nakala ya sauti ya Mushaf Notebook."],
 ['Loading…','جارٍ التحميل…','Waa la soo rarayaa…','Chargement…','لوڈ ہو رہا ہے…','Yükleniyor…','Memuat…','Inapakia…'],
 ['Connect to the internet to sign in the first time.','اتصل بالإنترنت لتسجيل الدخول أول مرة.','Ku xidh internetka si aad u gasho markii ugu horreysay.','Connectez-vous à internet pour vous connecter la première fois.','پہلی بار سائن ان کرنے کے لیے انٹرنیٹ سے جڑیں۔','İlk kez giriş yapmak için internete bağlanın.','Sambungkan ke internet untuk masuk pertama kali.','Unganisha intaneti ili uingie mara ya kwanza.'],
 ["You're offline. Your Quran and notes work; your class needs internet.",'أنت غير متصل. المصحف والملاحظات تعمل؛ الفصل يحتاج إلى الإنترنت.','Internet ma haysid. Quraanka iyo qoraalladu way shaqeynayaan; fasalku wuxuu u baahan yahay internet.','Vous êtes hors ligne. Le Coran et vos notes fonctionnent ; la classe a besoin d’internet.','آپ آف لائن ہیں۔ قرآن اور نوٹس کام کرتے ہیں؛ کلاس کے لیے انٹرنیٹ چاہیے۔','Çevrimdışısınız. Kuran ve notlar çalışır; sınıf için internet gerekir.','Anda offline. Al-Quran dan catatan berfungsi; kelas perlu internet.','Huna intaneti. Quran na maelezo yanafanya kazi; darasa linahitaji intaneti.'],
@@ -1903,6 +1932,8 @@ const UI_ROWS = [
 ["Open class","فتح الفصل","Fur fasalka","Ouvrir la classe","کلاس کھولیں","Sınıfı aç","Buka kelas","Fungua darasa"],
 ];
 const UI_PATTERNS = [
+  [/^(.+) (\d+):(\d+) · page (\d+)$/, ['$1 $2:$3 · صفحة $4','$1 $2:$3 · bogga $4','$1 $2:$3 · page $4','$1 $2:$3 · صفحہ $4','$1 $2:$3 · sayfa $4','$1 $2:$3 · halaman $4','$1 $2:$3 · ukurasa $4']],
+  [/^(\d+\+?) places match · showing (.+)$/, ['$1 مواضع متطابقة · يُعرض $2','$1 meelood ayaa u dhigma · waxaa la muujinayaa $2','$1 passages correspondent · affichage de $2','$1 مقامات ملتے ہیں · دکھایا جا رہا ہے $2','$1 yer eşleşiyor · gösterilen $2','$1 tempat cocok · menampilkan $2','Sehemu $1 zinalingana · inaonyesha $2']],
   [/^at most (\d+) mistakes$/, ['أقصى حد $1 أخطاء','ugu badnaan $1 khalad','au plus $1 fautes','زیادہ سے زیادہ $1 غلطیاں','en fazla $1 hata','paling banyak $1 kesalahan','makosa yasiyozidi $1']],
   [/^at least (\d+)%$/, ['على الأقل $1%','ugu yaraan $1%','au moins $1 %','کم از کم $1%','en az %$1','minimal $1%','angalau $1%']],
   [/^To pass: (.+)$/, ['للنجاح: $1','Si loo gudbo: $1','Pour réussir : $1','پاس ہونے کے لیے: $1','Geçmek için: $1','Untuk lulus: $1','Kufaulu: $1']],
@@ -3247,7 +3278,7 @@ function moveCursor() {
   const el = book.querySelector('.w.rk-cur'); if (el) el.scrollIntoView({block:'nearest', behavior:'smooth'});
   if (!e && R.on) { R.msg = R.only ? (R.flags.length ? `${R.flags.length} word${R.flags.length > 1 ? 's' : ''} to check. Press Review, listen to the ayah, then try again.` : '✓ Well done: every word of the ayah was correct.') : 'You reached the end of the surah.'; stopRecite(); }
 }
-function openR() { closeBar(); $('#rbar').hidden = false; document.body.classList.add('abar-open'); updR(); }
+function openR() { closeBar(); closeX(); $('#rbar').hidden = false; document.body.classList.add('abar-open'); updR(); }
 function closeR() { if (R.on) stopRecite(); $('#rbar').hidden = true; document.body.classList.remove('abar-open'); myAu.pause(); }
 function startFrom() {
   if (selAyah) return selAyah.split(':').map(Number);
@@ -3324,6 +3355,150 @@ function dataFile(name) {
   if (emb) return Promise.resolve(emb);
   return fetch(name).then(r => r.ok ? r.json() : null).catch(() => null);
 }
+/* ---------------- find verse (exam help) ----------------
+   Every word of the Quran is indexed by its consonant skeleton; three words in a row are usually enough to
+   pin down an ayah. While listening, the last words heard decide the page, so the page follows the reader. */
+const X = { on: false, rec: null, W: null, i3: null, i2: null, pos: -1, cur: null, t: 0, finals: '', err: '' };
+const AR_DIGITS = t => String(t).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+function xBuild() {
+  if (X.W) return;
+  const W = [], i3 = new Map(), i2 = new Map();
+  for (let su = 1; su <= 114; su++) Q.a[su - 1].forEach((t, ai) => t.split(' ').forEach((w, wi) => { const n = xKey(w); if (n) W.push({s: su, a: ai + 1, i: wi, n}); }));
+  const add = (m, k, j) => { let l = m.get(k); if (!l) m.set(k, l = []); l.push(j); };
+  for (let j = 0; j + 1 < W.length; j++) { add(i2, W[j].n + '|' + W[j + 1].n, j); if (j + 2 < W.length) add(i3, W[j].n + '|' + W[j + 1].n + '|' + W[j + 2].n, j); }
+  Object.assign(X, {W, i3, i2});
+}
+const xKey = w => skelAr(w).replace(/(.)\1+/g, '$1');
+const BISM = ['بسم', 'الله', 'الرحمن', 'الرحيم'].map(xKey);
+function xWords(text) {
+  let q = AR_DIGITS(text).split(/\s+/).map(xKey).filter(Boolean);
+  if (q.length > 4 && BISM.every((b, i) => q[i] === b)) q = q.slice(4);
+  return q;
+}
+/* candidates for a run of words: [{j: index of the last matched word, v: votes}] best first */
+function xMatch(q) {
+  xBuild();
+  const votes = new Map();
+  const vote = (m, n, w) => { for (let j = 0; j + n <= q.length; j++) { const l = m.get(q.slice(j, j + n).join('|')); if (!l || l.length > 400) continue; for (const p of l) { const st = p - j; votes.set(st, (votes.get(st) || 0) + w); } } };
+  vote(X.i3, 3, 1);
+  if (!votes.size) vote(X.i2, 2, 0.4);
+  const near = st => X.pos < 0 ? 0 : Math.abs(st - X.pos);
+  return [...votes.entries()].sort((a, b) => b[1] - a[1] || near(a[0]) - near(b[0]) || a[0] - b[0]).slice(0, 12)
+    .map(([st, v]) => ({j: Math.max(0, Math.min(X.W.length - 1, st + q.length - 1)), v}));
+}
+function xAyahOf(j) { const w = X.W[j]; return {s: w.s, a: w.a}; }
+function xLabel(s, a) { return `${Q.s[s - 1][1]} ${s}:${a}`; }
+function xShow(s, a, quiet) {
+  X.cur = {s, a};
+  const p = Q.p[s - 1][a - 1];
+  if (!visible().includes(p)) goto(p, true);
+  $('#xSub').textContent = `${xLabel(s, a)} · page ${p}`;
+  setTimeout(() => xMark(!quiet), 120);
+}
+function xMark(scroll) {
+  if (!book) return;
+  book.querySelectorAll('.w.exhit').forEach(e => e.classList.remove('exhit'));
+  if (!X.cur || $('#xbar').hidden) return;
+  const ws = book.querySelectorAll(`.w[data-k^="${X.cur.s}:${X.cur.a}:"]`);
+  ws.forEach(e => e.classList.add('exhit'));
+  if (scroll && ws[0]) ws[0].scrollIntoView({block: 'center', behavior: 'smooth'});
+}
+function xSurahByName(t) {
+  const lat = String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '').replace(/^(al|an|ar|as|ash|at|ad|adh|az|aal)(?=[a-z]{3})/, '');
+  const ar = normAr(String(t).replace(/^\s*سور[ةه]\s*/, ''));
+  let best = -1, bestLen = 0;
+  Q.s.forEach((m, i) => {
+    const en = String(m[1]).toLowerCase().replace(/[^a-z]/g, '').replace(/^(al|an|ar|as|ash|at|ad|adh|az|aal)(?=[a-z]{3})/, '');
+    const an = normAr(m[0]);
+    const dv = x => x.replace(/[aeiouy]/g, '').replace(/(.)\1+/g, '$1');
+    const ok = (lat.length >= 3 && (en.startsWith(lat) || lat.startsWith(en) || (dv(lat).length >= 2 && dv(en) === dv(lat)))) || (ar.length >= 2 && (an === ar || an.replace(/^ال/, '') === ar.replace(/^ال/, '')));
+    const len = ok ? (lat ? en.length : an.length) : 0;
+    if (ok && (best < 0 || Math.abs(len - Math.max(lat.length, ar.length)) < Math.abs(bestLen - Math.max(lat.length, ar.length)))) { best = i; bestLen = len; }
+  });
+  return best >= 0 ? best + 1 : 0;
+}
+/* "surah al-baqarah ayah 255" spoken in Arabic, or typed in any of the forms below */
+function xCommand(text) {
+  const t = AR_DIGITS(text).trim();
+  let m = t.match(/^(\d{1,3})\s*[:.\s]\s*(\d{1,3})$/) || t.match(/^(\d{1,3})$/);
+  if (m) { const su = +m[1], a = +(m[2] || 1); return Q.a[su - 1] && Q.a[su - 1][a - 1] !== undefined ? {s: su, a} : null; }
+  m = t.match(/سور[ةه]\s+(.+?)(?:\s+(?:الآي[ةه]|آي[ةه]|اي[ةه]|الاي[ةه])\s*(\d{1,3}))?(?:\s|$)/);
+  if (m) { const names = m[1].split(/\s+/); for (let n = Math.min(3, names.length); n >= 1; n--) { const su = xSurahByName(names.slice(0, n).join(' ')); if (su) { const a = +(m[2] || (t.match(/(\d{1,3})\s*$/) || [])[1] || 1); return {s: su, a: Q.a[su - 1][a - 1] !== undefined ? a : 1}; } } }
+  m = t.match(/^([A-Za-z'\- ]+?)\s*[:.\s]?\s*(\d{1,3})?$/);
+  if (m && /[a-z]/i.test(m[1])) { const su = xSurahByName(m[1]); if (su) { const a = +(m[2] || 1); return {s: su, a: Q.a[su - 1][a - 1] !== undefined ? a : 1}; } }
+  return null;
+}
+function xResults(list) {
+  $('#xRes').innerHTML = list.map(({s: su, a}) => `<button class="btn" data-xgo="${su}:${a}">${esc(xLabel(su, a))} · p.${Q.p[su - 1][a - 1]}<span class="ar" dir="rtl">${esc(Q.a[su - 1][a - 1].split(' ').slice(0, 5).join(' '))}…</span></button>`).join('');
+}
+function xFind(text) {
+  if (!Q) return;
+  X.pos = -1;
+  const cmd = xCommand(text);
+  if (cmd) { xResults([]); xShow(cmd.s, cmd.a); return true; }
+  const q = xWords(text);
+  if (!q.length) { $('#xSub').textContent = 'Not found. Try a few more words.'; xResults([]); return false; }
+  xBuild();
+  let hits;
+  if (q.length >= 3) hits = xMatch(q).filter((h, i, arr) => h.v >= Math.max(1, arr[0].v - 0.5));
+  else { hits = []; for (let j = 0; j + q.length <= X.W.length && hits.length < 30; j++) if (q.every((w, k) => X.W[j + k].n === w)) hits.push({j: j + q.length - 1, v: 1}); }
+  const seen = new Set(), ay = [];
+  for (const h of hits) { const x = xAyahOf(h.j), k = x.s + ':' + x.a; if (!seen.has(k)) { seen.add(k); ay.push(x); } }
+  if (!ay.length) { $('#xSub').textContent = 'Not found. Try a few more words.'; xResults([]); return false; }
+  X.pos = hits[0].j; xShow(ay[0].s, ay[0].a);
+  xResults(ay.length > 1 ? ay.slice(0, 8) : []);
+  if (ay.length > 1) $('#xSub').textContent = `${ay.length > 8 ? '8+' : ay.length} places match · showing ${xLabel(ay[0].s, ay[0].a)}`;
+  return true;
+}
+/* listening: the last words heard move the page; a spoken "surah … ayah …" jumps straight there */
+function xHeard(text) {
+  clearTimeout(X.later);
+  if (Date.now() - X.t < 350) { X.later = setTimeout(() => xHeard(text), 360); return; }
+  X.t = Date.now();
+  const cmd = /سور[ةه]/.test(text) ? xCommand(text.slice(text.search(/سور[ةه]/))) : null;
+  if (cmd) { X.pos = -1; xShow(cmd.s, cmd.a); return; }
+  const q = xWords(text).slice(-10);
+  if (q.length < 3) return;
+  const c = xMatch(q);
+  if (!c.length) return;
+  const top = c[0], second = c[1];
+  // before the first find, wait until one place clearly leads; once following, the nearest place wins ties
+  const lead = !second || second.v < top.v;
+  const sure = X.pos >= 0 ? top.v >= 1 : lead && (top.v >= 2 || (!second && top.v >= 1));
+  if (!sure) return;
+  X.pos = top.j;
+  const x = xAyahOf(top.j);
+  if (!X.cur || X.cur.s !== x.s || X.cur.a !== x.a) xShow(x.s, x.a, true);
+}
+function xListen() {
+  if (X.on) return xStop();
+  if (inViewer) { $('#xSub').textContent = 'Listening needs your microphone. Open your audio copy of Mushaf Notebook.'; return; }
+  if (!SRec) { $('#xSub').textContent = 'This browser cannot hear. Use Chrome or Edge.'; return; }
+  xBuild();
+  X.on = true; X.finals = ''; X.pos = -1; $('#xDot').classList.add('on'); $('#xListen').textContent = '■ Stop'; $('#xSub').textContent = 'Listening… read or say the verse';
+  const start = () => {
+    const rec = new SRec(); rec.lang = 'ar-SA'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1; X.rec = rec;
+    rec.onresult = ev => {
+      let interim = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) X.finals += ' ' + r[0].transcript; else interim += ' ' + r[0].transcript; }
+      X.finals = X.finals.split(/\s+/).slice(-40).join(' ');
+      const all = (X.finals + ' ' + interim).trim();
+      $('#xHeard').textContent = all.split(/\s+/).slice(-12).join(' ');
+      xHeard(all);
+    };
+    rec.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { X.err = 'The microphone is blocked. Allow it for this page.'; xStop(); } else if (ev.error === 'network') { X.err = 'Listening needs an internet connection.'; xStop(); } };
+    rec.onend = () => { if (X.on) { try { start(); } catch { xStop(); } } };
+    try { rec.start(); } catch { xStop(); }
+  };
+  start();
+}
+function xStop() {
+  X.on = false; const r = X.rec; X.rec = null; if (r) { r.onend = null; try { r.stop(); } catch {} }
+  $('#xDot').classList.remove('on'); $('#xListen').textContent = '🎙 Listen';
+  if (X.err) { $('#xSub').textContent = X.err; X.err = ''; }
+}
+function openX() { closeBar(); closeR(); $('#xbar').hidden = false; document.body.classList.add('abar-open'); $('#findBtn').setAttribute('aria-pressed', 'true'); setTimeout(() => $('#xIn').focus(), 50); xMark(false); }
+function closeX() { if (!$('#xbar') || $('#xbar').hidden) return; xStop(); $('#xbar').hidden = true; document.body.classList.remove('abar-open'); $('#findBtn').setAttribute('aria-pressed', 'false'); xMark(false); }
 function flashEl(el) { if (!el) return; el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 
 function textHtml(p) {
@@ -3374,7 +3549,8 @@ function leafHtml(p, side) {
     <canvas class="ink over"></canvas>
   </div>`;
 }
-function render() {
+function render() { renderPage(); try { xMark(false); } catch {} }
+function renderPage() {
   if (!Q) return;
   const vis = visible();
   book.classList.toggle('spread', spread);
@@ -4195,6 +4371,12 @@ $('#dBody').addEventListener('change', async e => {
 });
 /* recite & check controls */
 $('#reciteBtn').addEventListener('click', () => { if ($('#rbar').hidden) openR(); else closeR(); });
+$('#findBtn').addEventListener('click', () => { if ($('#xbar').hidden) openX(); else closeX(); });
+$('#xClose').addEventListener('click', closeX);
+$('#xListen').addEventListener('click', xListen);
+$('#xGo').addEventListener('click', () => xFind($('#xIn').value));
+$('#xIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); xFind($('#xIn').value); } });
+$('#xRes').addEventListener('click', e => { const b = e.target.closest('[data-xgo]'); if (!b) return; const [su, a] = b.dataset.xgo.split(':').map(Number); X.pos = -1; xShow(su, a); });
 $('#rStart').addEventListener('click', () => startRecite(false));
 $('#rStop').addEventListener('click', stopRecite);
 $('#rClose').addEventListener('click', closeR);

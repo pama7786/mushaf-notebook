@@ -33,6 +33,10 @@ The app opens on a sign-in screen. Nobody reaches the Quran or the dashboards un
 - **With Firebase switched on:** everyone signs in with email and password. The role (student or teacher) is chosen once at sign-up and can never be changed, not in the app and not through the database rules. A teacher who also wants a student account signs up again with another email. After the first sign-in the app also opens offline.
 - **Without Firebase:** the first screen asks once whether you are a student or a teacher. That choice is fixed on that device.
 
+## Find verse
+
+Tap **Find verse** in the toolbar. Type `2:255`, `Al-Kahf 10`, `yasin` or a few words of the ayah, or tap **Listen** and say it: read the beginning of the ayah, or say `سورة الكهف الآية ١٠`. The page opens with the ayah highlighted. While Listen is on, the page keeps following as the reading continues, ayah by ayah. Listening uses the browser's speech recognition (Chrome or Edge, with internet).
+
 ## Chat and lessons: two ways
 
 ### Direct (works straight away, no accounts)
