@@ -28,7 +28,12 @@ To update the app later, upload the changed files again; installed apps pick up 
 
 ## Signing in
 
-The app opens on a sign-in screen. Nobody reaches the Quran or the dashboards until they sign in, and the screen has a language picker so everyone can read it in their own language.
+The app opens with a choice, and a language picker so everyone can read it in their own language:
+
+- **Academy**: learn in a class with a teacher. You sign in (or create an account) before reaching the Quran and the dashboards.
+- **Self learning**: open the mushaf straight away with every tool, without an account, a class or a teacher. Notes, marks, your daily plan and your recitation log stay on that device. You can join the Academy later from the Self learning page.
+
+Signing out of the Academy brings back this choice.
 
 - **With Firebase switched on:** everyone signs in with email and password. The role (student or teacher) is chosen once at sign-up and can never be changed, not in the app and not through the database rules. A teacher who also wants a student account signs up again with another email. After the first sign-in the app also opens offline.
 - **Without Firebase:** the first screen asks once whether you are a student or a teacher. That choice is fixed on that device.

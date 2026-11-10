@@ -1,4 +1,4 @@
-const V = 'mnb-202611100558';
+const V = 'mnb-202611100611';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icons/icon-192.png', 'icons/icon-512.png',
   'quran.json', 'qiraat10.json', 'shatibi.json', 'roots.json', 'qrec.json'];
 const DATA_HOSTS = ['cdn.jsdelivr.net', 'api.quran.com', 'api.alquran.cloud'];
